@@ -18,14 +18,28 @@ pub enum WebsocketMessage {
     /// Contains file metadata, only agent -> server.
     File(File),
     /// Contains a request for file data, only server -> agent.
-    Request(FileRequest)
+    Request(FileRequest),
+    /// A request from server -> agent to upload a file to the url
+    Upload(FileUploadRequest)
 }
 
 impl TryFrom<Message> for WebsocketMessage {
     type Error = WebsocketMessageError;
     fn try_from(s: Message) -> Result<Self, WebsocketMessageError> {
-        //TODO
-        Ok(WebsocketMessage::Error("Not yet implemented".to_owned()))
+        if s.is_binary() {
+            bincode::deserialize(s.as_bytes()).map_err(|_| WebsocketMessageError::FailedSerialization)
+        } else {
+            Err(WebsocketMessageError::FailedSerialization)
+        }
+    }
+}
+
+impl From<WebsocketMessage> for Message {
+    fn from(s: WebsocketMessage) -> Message {
+        match bincode::serialize(&s).map_err(|e| WebsocketMessage::Error(format!("Failed to serialize message: {}", e))) {
+            Ok(f) => Message::binary(f),
+            Err(e) => Message::binary(bincode::serialize(&WebsocketMessage::Error(e.to_string())).unwrap()),
+        }
     }
 }
 
@@ -46,11 +60,16 @@ pub struct File {
     user: String,
     crt: DateTime<Utc>,
     exp: DateTime<Utc>,
+    stream_id: usize,
 }
 
 impl File {
-    fn new(name: String, size: usize, ext: String, user: String, crt: DateTime<Utc>, exp: DateTime<Utc>) -> File {
-        File { name, size, ext, user, crt, exp }
+    pub fn new(name: String, size: usize, ext: String, user: String, crt: DateTime<Utc>, exp: DateTime<Utc>, stream_id: usize) -> File {
+        File { name, size, ext, user, crt, exp, stream_id }
+    }
+
+    pub fn stream_id(&self) -> usize {
+        self.stream_id
     }
 }
 
@@ -58,15 +77,36 @@ impl File {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct FileRequest {
     id: uuid::Uuid,
+    stream_id: usize,
 }
 
 impl FileRequest {
-    fn new(id: uuid::Uuid) -> Result<FileRequest, WebsocketMessageError> {
+    pub fn new(id: uuid::Uuid, stream_id: usize) -> Result<FileRequest, WebsocketMessageError> {
         //We want to recquire uuid's be generated with v4
         match id.get_version() {
             Some(uuid::Version::Random) => (),
             _ => return Err(WebsocketMessageError::InvalidUuidVersion)
         }
-        Ok(FileRequest { id })
+        Ok(FileRequest { id, stream_id })
+    }
+
+    pub fn id(&self) -> uuid::Uuid {
+        self.id
+    }
+
+    pub fn stream_id(&self) -> usize {
+        self.stream_id
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct FileUploadRequest {
+    id: uuid::Uuid,
+    url: String,
+}
+
+impl FileUploadRequest {
+    pub fn new(id: uuid::Uuid, url: String) -> Self {
+        FileUploadRequest{ id, url }
     }
 }

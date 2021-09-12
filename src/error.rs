@@ -3,8 +3,14 @@ use std::fmt::{Display, Formatter};
 /// Represents an error when working with a websocket message. Whether serializing, deserializing, or parsing.
 #[derive(Debug)]
 pub enum WebsocketMessageError {
-    ///Attempted to request a file with a uuid version != 4
+    /// Attempted to request a file with a uuid version != 4
     InvalidUuidVersion,
+    /// File upload failed
+    FailedFileUpload,
+    /// The requested file doesn't exist
+    FileDoesntExist,
+    //Unable to serialize this file
+    FailedSerialization,
 }
 
 impl Display for WebsocketMessageError {

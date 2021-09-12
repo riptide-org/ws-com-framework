@@ -5,7 +5,7 @@ mod error;
 mod websocket_message;
 
 pub use error::WebsocketMessageError;
-pub use websocket_message::{WebsocketMessage, File, FileRequest};
+pub use websocket_message::{WebsocketMessage, File, FileRequest, FileUploadRequest};
 
 //TODO tests
 #[cfg(test)]
