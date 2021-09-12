@@ -1,11 +1,11 @@
-//! This library is designed to simplify the communication between a server agent, and a 
+//! This library is designed to simplify the communication between a server agent, and a
 //! central api server.
 
 mod error;
 mod websocket_message;
 
 pub use error::WebsocketMessageError;
-pub use websocket_message::{WebsocketMessage, File, FileRequest, FileUploadRequest};
+pub use websocket_message::{File, FileRequest, FileUploadRequest, WebsocketMessage};
 
 //TODO tests
 #[cfg(test)]

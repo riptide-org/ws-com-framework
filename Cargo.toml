@@ -10,5 +10,5 @@ chrono = { version = "0.4", features = ["serde"] }
 serde = {version = "1.0", features = ["derive"] }
 serde_derive = "1.0"
 bincode = "1.2.1"
-warp = "0.3"
+warp = "0.3" #TODO this dependency is *enourmous* and we really only need it to enable conversions to its ws::Message type...
 uuid = {version = "0.8", features = ["serde", "v4"]}
