@@ -12,3 +12,6 @@ serde_derive = "1.0"
 bincode = "1.2.1"
 warp = "0.3" #TODO this dependency is *enourmous* and we really only need it to enable conversions to its ws::Message type...
 uuid = {version = "0.8", features = ["serde", "v4"]}
+futures="0.3.16"
+async-trait = "0.1.51"
+tokio = { version = "1", features = ["full"] }
