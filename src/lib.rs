@@ -4,50 +4,43 @@
 mod server;
 mod client;
 
-mod error;
-mod websocket_message;
-
-pub use error::WebsocketMessageError;
-pub use websocket_message::{File, FileRequest, FileUploadRequest, WebsocketMessage};
-
-// fn test() {
-//     //lets think about how we might want this api to work
-
-//     // enum MessageTypes {
-//     //     Valid() //Contains things
-//     //     Close() //Closing Message
-//     //     Error() //Unknown
-//     // }
-
-//     // std::result::Result<warp::ws::Message, warp::Error>
-    
-    
-//     use ws-com-framework::server::*; //import the server if we are server, client if we are client
-
-//     let s = Sender::new(); //Create a new sender over the sending stream of the websocket.
-
-//     //Same syntax, except message is now of our custom type, in this way we can limit what can be
-//     //sent down the websockets - which should help to reduce errors.
-//     s.send(message).await.unwrap();
-
-//     //Close a websocket
-//     s.close().await.unwrap();
-
-//     let r = Receiver::new(rx); //Create a new reciever, which wraps over the sink of the websocket.
-
-//     while let Some(v) = r.next().await {
-//         //Very similar syntax to current solution
-//         //except that v is a custom type which we can then
-//         //easily match over
-//     }
-
-// }
-
 //TODO tests
 #[cfg(test)]
 mod tests {
+    use macros::IntoImpl;
     #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
+    fn test_macro() {  
+        #[derive(IntoImpl, Debug, Eq, PartialEq)]
+        enum Test {
+            String(String),
+            i32(i32),
+        }
+    
+        //Testing that the macro is working correctly
+        let a: Test = String::from("Hello, world-1!").into();
+        let b: Test = (25 as i32).into();
+
+        assert_eq!(a, Test::String("Hello, world-1!".to_owned()));
+        assert_eq!(b, Test::i32(25));
+    }
+    
+    #[test]
+    fn test_macro_extended() {
+        mod further_structs {
+            #[derive(Debug, Eq, PartialEq)]
+            pub struct Hello { }
+        }        
+
+        #[derive(IntoImpl, Debug, Eq, PartialEq)]
+        enum Test {
+            Other(i32),
+            FurtherTest(further_structs::Hello),
+        }
+
+        let a: Test = (5 as i32).into();
+        let b: Test = further_structs::Hello{}.into();
+
+        assert_eq!(a, Test::Other(5));
+        assert_eq!(b, Test::FurtherTest(further_structs::Hello{}))
     }
 }

@@ -1,5 +1,9 @@
 //! Handles errors for the server type
-#[derive(Debug)]
+
+use serde::{Deserialize, Serialize};
+
+
+#[derive(Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum Error {
     A
 }
