@@ -11,26 +11,33 @@
 //! 
 //! # Examples
 //! ```rust
-//! let (tx, rx) = tokio::sync::mpsc::unbounded_channel::<Message>();
+//! #[cfg(feature = "server")]
+//! async fn example() {
+//!     use ws_com_framework::message::Message;
+//!     use ws_com_framework::Sender;
+//!     use ws_com_framework::Receiver;
 //! 
-//! //Create a new sender over the sending stream of the websocket.
-//! let mut s = Sender::new(tx); 
+//!     let (tx, rx) = tokio::sync::mpsc::unbounded_channel::<Message>();
 //! 
-//! let message = "Hello, World!".to_owned();
+//!     //Create a new sender over the sending stream of the websocket.
+//!     let mut s = Sender::new(tx); 
 //! 
-//! //Same syntax, except message is now of our custom type, in this way we can limit what can be
-//! //sent down the websockets - which should help to reduce errors.
-//! s.send(message).await.unwrap();
+//!     let message = "Hello, World!".to_owned();
 //! 
-//! //Close the websocket
-//! s.close().await;
+//!     //Same syntax, except message is now of our custom type, in this way we can limit what can be
+//!     //sent down the websockets - which should help to reduce errors.
+//!     s.send(message).await.unwrap();
 //! 
-//! let mut r = Receiver::new(rx); //Create a new reciever, which wraps over the sink of the websocket.
-//! while let Some(v) = r.next().await {
-//!     //Very similar syntax to current solution
-//!     //except that v is a custom type which we can then
-//!     //easily match over
-//!     assert_eq!(Message::Message("Hello, World!".into()), v.unwrap());
+//!     //Close the websocket
+//!     s.close().await;
+//! 
+//!     let mut r = Receiver::new(rx); //Create a new reciever, which wraps over the sink of the websocket.
+//!     while let Some(v) = r.next().await {
+//!         //Very similar syntax to current solution
+//!         //except that v is a custom type which we can then
+//!         //easily match over
+//!         assert_eq!(Message::Message("Hello, World!".into()), v.unwrap());
+//!     }
 //! }
 //! ```
 
@@ -44,17 +51,16 @@ compile_error!(
 
 #[cfg(feature = "client")]
 mod client;
-mod error;
-mod message;
+pub mod error;
+pub mod message;
 #[cfg(feature = "server")]
 mod server;
 mod traits;
 
 //Re-export relevant types
 pub use crate::error::{Error, ErrorLevel, WrappedError};
-pub use crate::message::{File, FileRequest, FileUploadRequest};
+pub use crate::message::{File, FileRequest, FileUploadRequest, Message};
 
-use message::Message;
 use traits::{RxStream, Sendable, TxStream};
 
 /// A wrapper over a websocket, is able to asynchronously send messages down the websocket.
