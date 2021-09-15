@@ -23,13 +23,13 @@ fn merge_idents(v: Vec<syn::Ident>) -> String {
 /// Holds data needed for the IntoImpl macro generation
 struct IntoImpl {
     variant_name: syn::Ident,
-    path_segs: Vec<syn::Ident>,
+    path_segs: String,
 }
 
 /// This macro, when derived, will automatically create Into<T> implemtnations for
 /// all variants of the enum it is derived on.
 /// This macro can only be used on enums, and has support for custom types in variants.
-#[proc_macro_derive(IntoImpl)]
+#[proc_macro_derive(IntoImpl, attributes(exclude))]
 pub fn derive_into_function_websockets(input: TokenStream) -> TokenStream {
     //Parse the structure this was called on
     let input = parse_macro_input!(input as DeriveInput);
@@ -39,8 +39,8 @@ pub fn derive_into_function_websockets(input: TokenStream) -> TokenStream {
     };
 
     let name = input.ident;
+    let mut scanned_types: Vec<String> = vec![];
     let mut variant_types: Vec<IntoImpl> = vec![];
-
     //Attempt to get the types of all of the different variants inside of the enum
     data_enum
         .variants
@@ -48,21 +48,33 @@ pub fn derive_into_function_websockets(input: TokenStream) -> TokenStream {
         .for_each(|x: &mut syn::Variant| {
             let variant_name = x.ident.clone();
 
-            let path_segs: Vec<syn::Ident> = x
-                .fields
-                .clone()
-                .iter()
-                .map(|field| match &field.ty {
-                    syn::Type::Path(p) => extract_path_segements(p.path.segments.iter().collect()),
-                    _ => panic!("Unsupported type!"),
+            let mut excluded = false;
+            x.attrs.clone().iter().for_each(|t| {
+                if merge_idents(extract_path_segements(t.path.segments.iter().collect())) == "exclude" {
+                    excluded = true;
+                }
+            });
+            if !excluded {
+                let path_segs: Vec<syn::Ident> = x
+                    .fields
+                    .clone()
+                    .iter()
+                    .map(|field| match &field.ty {
+                        syn::Type::Path(p) => extract_path_segements(p.path.segments.iter().collect()),
+                        _ => panic!("Unsupported type!"),
+                    })
+                    .collect::<Vec<Vec<syn::Ident>>>()[0]
+                    .clone();
+                let path_segs = merge_idents(path_segs);
+                if scanned_types.contains(&path_segs) {
+                    panic!("Already implemented a type of `{}` please exclude this type with #[exclude]", path_segs);
+                }
+                scanned_types.push(path_segs.clone());
+                variant_types.push(IntoImpl {
+                    variant_name,
+                    path_segs,
                 })
-                .collect::<Vec<Vec<syn::Ident>>>()[0]
-                .clone();
-
-            variant_types.push(IntoImpl {
-                variant_name,
-                path_segs,
-            })
+            }
         });
 
     //Generate the implementations for the struct, and return them.
@@ -76,11 +88,7 @@ pub fn derive_into_function_websockets(input: TokenStream) -> TokenStream {
                 }}
             }}
             ",
-            name,
-            merge_idents(t.path_segs.clone()),
-            name,
-            name,
-            t.variant_name
+            name, t.path_segs, name, name, t.variant_name
         );
         expanded.push(inner.parse().unwrap());
     });

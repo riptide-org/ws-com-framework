@@ -9,18 +9,13 @@ use crate::traits::{Sendable, Receivable};
 /// carried out.
 #[derive(Debug, Serialize, Deserialize, IntoImpl, Eq, PartialEq)]
 pub enum Message {
-    /// An error has occured, this is bidirectional between server <--> agent.
     Error(Error),
-    /// Contains a request for metadata on a file, only server -> agent.
     Metadata(FileRequest),
-    /// Contains metadata about a file, only agent -> server.
     File(File),
-    /// A request from server -> agent to upload a file
     Upload(FileUploadRequest),
-    /// A simple message, transmitted server <-> agent.
-    /// Contains something which should be displayed to the user.
-    /// This is also used for tests.
     Message(String),
+    #[exclude]
+    Close(String),
 }
 
 impl Sendable for Message {}
@@ -108,5 +103,9 @@ pub struct FileUploadRequest {
 impl FileUploadRequest {
     pub fn new(id: uuid::Uuid, url: String) -> Self {
         FileUploadRequest { id, url }
+    }
+
+    pub fn id(&self) -> uuid::Uuid {
+        self.id
     }
 }

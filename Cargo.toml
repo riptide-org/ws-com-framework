@@ -15,6 +15,7 @@ uuid = {version = "0.8", features = ["serde", "v4"]}
 futures="0.3.16"
 async-trait = "0.1.51"
 tokio = { version = "1", features = ["full"] }
+websocket = "0.26.2"
 macros = { path = "./macros" } #Eventually this will be split off into it's own crate (workspace/github repo)
 
 [features]
