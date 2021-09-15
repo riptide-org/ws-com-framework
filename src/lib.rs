@@ -3,12 +3,12 @@
 //! # Feature Flags
 //! - `server`: Register what message types may be sent or recieved as a server.
 //! - `client`: Register what message types may be sent or received as a client.
-//! 
+//!
 //! Note that these features are mutually exclusive, attempting to use both of them will cause a compile error.
-//! 
+//!
 //! The main difference between them is what can be sent and recieved down each socket. This helps to create limitations around what
 //! each side of the connection must match against - all checked at compile time of course.
-//! 
+//!
 //! # Examples
 //! ```rust
 //! #[cfg(feature = "server")]
@@ -16,21 +16,21 @@
 //!     use ws_com_framework::message::Message;
 //!     use ws_com_framework::Sender;
 //!     use ws_com_framework::Receiver;
-//! 
+//!
 //!     let (tx, rx) = tokio::sync::mpsc::unbounded_channel::<Message>();
-//! 
+//!
 //!     //Create a new sender over the sending stream of the websocket.
-//!     let mut s = Sender::new(tx); 
-//! 
+//!     let mut s = Sender::new(tx);
+//!
 //!     let message = "Hello, World!".to_owned();
-//! 
+//!
 //!     //Same syntax, except message is now of our custom type, in this way we can limit what can be
 //!     //sent down the websockets - which should help to reduce errors.
 //!     s.send(message).await.unwrap();
-//! 
+//!
 //!     //Close the websocket
 //!     s.close().await;
-//! 
+//!
 //!     let mut r = Receiver::new(rx); //Create a new reciever, which wraps over the sink of the websocket.
 //!     while let Some(v) = r.next().await {
 //!         //Very similar syntax to current solution
@@ -64,6 +64,7 @@ pub use crate::message::{File, FileRequest, FileUploadRequest, Message};
 use traits::{RxStream, Sendable, TxStream};
 
 /// A wrapper over a websocket, is able to asynchronously send messages down the websocket.
+#[derive(Clone, Copy, Debug)]
 pub struct Sender<T>
 where
     T: TxStream,
@@ -94,9 +95,15 @@ where
         //We do not need to check this return type, it wouldn't give us any useful information for doing so.
         self.tx.close();
     }
+
+    ///Acquire the underlying tx stream, this consumes the sender wrapper.
+    pub fn underlying(self) -> T {
+        self.tx
+    }
 }
 
 /// A wrapper over the receiving end of a websocket, will asychronously receive messages.
+#[derive(Clone, Copy, Debug)]
 pub struct Receiver<R>
 where
     R: RxStream,
@@ -119,6 +126,11 @@ where
     /// the result is infalliable, however some types this may be wrapped over are not infallible.
     pub async fn next(&mut self) -> Option<Result<Message, Error>> {
         self.rx.collect().await
+    }
+
+    ///Acquire the underlying rx stream, this consumes the reciever wrapper.
+    pub fn underlying(self) -> R {
+        self.rx
     }
 }
 
