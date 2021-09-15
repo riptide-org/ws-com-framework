@@ -50,13 +50,17 @@ impl TxStream for futures::stream::SplitSink<warp::ws::WebSocket, warp::ws::Mess
 #[async_trait]
 impl RxStream for futures::stream::SplitStream<warp::ws::WebSocket> {
     async fn collect<T>(&mut self) -> Option<Result<T, Error>>
-    where T: From<Message> + Send,
+    where
+        T: From<Message> + Send,
     {
         let m: Result<Message, Error>;
         if let Some(t) = self.next().await {
             m = match t {
                 Ok(f) => Ok::<Message, Error>(f.into()),
-                Err(e) => Err(Error::Generic(WrappedError::new(ErrorLevel::High, e.to_string())))
+                Err(e) => Err(Error::Generic(WrappedError::new(
+                    ErrorLevel::High,
+                    e.to_string(),
+                ))),
             };
             return Some(m.map(|f| f.into()));
         }
@@ -106,21 +110,20 @@ impl RxStream for tokio::sync::mpsc::UnboundedReceiver<Message> {
     }
 }
 
-
 //////// Implmenation for websockets split streams ////////
 #[async_trait]
 impl TxStream for websocket::sender::Writer<std::net::TcpStream> {
-    async fn transmit<T>(&mut self, m: T) -> Result<(), Error> 
-    where  
+    async fn transmit<T>(&mut self, m: T) -> Result<(), Error>
+    where
         T: Into<Message> + Send,
     {
         let m: Message = m.into();
         let m: websocket::OwnedMessage = m.into();
-        self
-            .send_message(&m)
+        self.send_message(&m)
             .map_err(|e| Error::Generic(WrappedError::new(ErrorLevel::High, e.to_string())))
     }
 
+    #[allow(unused_must_use)]
     async fn close(self) {
         self.shutdown_all();
     }
@@ -137,11 +140,14 @@ impl RxStream for websocket::receiver::Reader<std::net::TcpStream> {
             Err(e) => {
                 return match e {
                     websocket::result::WebSocketError::NoDataAvailable => None,
-                    _ => Some(Err(Error::Generic(WrappedError::new(ErrorLevel::High, e.to_string()))))
+                    _ => Some(Err(Error::Generic(WrappedError::new(
+                        ErrorLevel::High,
+                        e.to_string(),
+                    )))),
                 };
             }
         };
-        return Some(Ok(m.into()))
+        return Some(Ok(m.into()));
     }
 }
 
@@ -157,13 +163,16 @@ impl Into<Message> for websocket::OwnedMessage {
         return match self {
             websocket::OwnedMessage::Binary(b) => {
                 let b = &b;
-               bincode::deserialize(b).unwrap()
-            },
+                bincode::deserialize(b).unwrap()
+            }
             websocket::OwnedMessage::Close(e) => {
-                let e = e.unwrap_or(websocket::CloseData { reason: "Unknown Reason".into(), status_code: 400 });
+                let e = e.unwrap_or(websocket::CloseData {
+                    reason: "Unknown Reason".into(),
+                    status_code: 400,
+                });
                 Message::Close(e.reason)
-            },
+            }
             t => panic!("Type not implemented for websocket parsing: {:?}", t),
-        }
+        };
     }
 }

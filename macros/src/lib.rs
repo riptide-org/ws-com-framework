@@ -55,7 +55,7 @@ pub fn derive_into_function_websockets(input: TokenStream) -> TokenStream {
                 }
             });
             if !excluded {
-                let path_segs: Vec<syn::Ident> = x
+                let path_segs = x
                     .fields
                     .clone()
                     .iter()
@@ -63,17 +63,19 @@ pub fn derive_into_function_websockets(input: TokenStream) -> TokenStream {
                         syn::Type::Path(p) => extract_path_segements(p.path.segments.iter().collect()),
                         _ => panic!("Unsupported type!"),
                     })
-                    .collect::<Vec<Vec<syn::Ident>>>()[0]
+                    .collect::<Vec<Vec<syn::Ident>>>()
                     .clone();
-                let path_segs = merge_idents(path_segs);
-                if scanned_types.contains(&path_segs) {
-                    panic!("Already implemented a type of `{}` please exclude this type with #[exclude]", path_segs);
+                if !path_segs.is_empty() {
+                    let path_segs = merge_idents(path_segs[0].clone());
+                    if scanned_types.contains(&path_segs) {
+                        panic!("Already implemented a type of `{}` please exclude this type with #[exclude]", path_segs);
+                    }
+                    scanned_types.push(path_segs.clone());
+                    variant_types.push(IntoImpl {
+                        variant_name,
+                        path_segs,
+                    })
                 }
-                scanned_types.push(path_segs.clone());
-                variant_types.push(IntoImpl {
-                    variant_name,
-                    path_segs,
-                })
             }
         });
 

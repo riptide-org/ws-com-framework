@@ -1,8 +1,8 @@
 use crate::error::Error;
+use crate::traits::{Receivable, Sendable};
 use chrono::prelude::*;
 use macros::IntoImpl;
 use serde::{Deserialize, Serialize};
-use crate::traits::{Sendable, Receivable};
 
 /// A message which can be sent between the server and client. Can hold
 /// A variety of values and types, depending on which action needs to be

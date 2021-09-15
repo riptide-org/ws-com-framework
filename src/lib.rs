@@ -175,4 +175,39 @@ mod macros {
         assert_eq!(a, Test::Other(5));
         assert_eq!(b, Test::FurtherTest(further_structs::Hello {}))
     }
+
+    #[test]
+    fn test_macro_exclusion() {
+        #[derive(IntoImpl, Debug, Eq, PartialEq)]
+        enum Test {
+            Hello(String),
+            #[exclude]
+            World(String),
+            Other(i32),
+        }
+
+        let a: Test = "Hello".to_owned().into();
+        let b: Test = "World".to_owned().into();
+        let c: Test = (5 as i32).into();
+
+        assert_eq!(a, Test::Hello("Hello".to_owned()));
+        assert_eq!(b, Test::Hello("World".to_owned()));
+        assert_ne!(a, Test::World("Hello".to_owned()));
+        assert_ne!(b, Test::World("World".to_owned()));
+        assert_eq!(c, Test::Other(5));
+    }
+
+    #[test]
+    fn test_no_params() {
+        #[allow(dead_code)]
+        #[derive(IntoImpl, Debug, Eq, PartialEq)]
+        enum Test {
+            Hello(String),
+            World,
+        }
+
+        let a: Test = "Hello".to_owned().into();
+
+        assert_eq!(a, Test::Hello("Hello".into()));
+    }
 }
