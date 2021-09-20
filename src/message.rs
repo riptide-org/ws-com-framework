@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 /// A message which can be sent between the server and client. Can hold
 /// A variety of values and types, depending on which action needs to be
 /// carried out.
-#[derive(Debug, Serialize, Deserialize, IntoImpl, Eq, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, IntoImpl, Eq, PartialEq, Clone)]
 pub enum Message {
     Error(Error),
     Metadata(FileRequest),
@@ -22,7 +22,7 @@ impl Sendable for Message {}
 impl Receivable for Message {}
 
 /// A request for the metadata for a file.
-#[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct FileRequest {
     id: uuid::Uuid,
     stream_id: usize,
@@ -52,49 +52,81 @@ impl FileRequest {
 
 /// Represents a file saved on the users system, this is the metadata of which sent to the server.
 /// This should be sent in response to a FileRequest being recieved
-#[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct File {
     id: uuid::Uuid,
-    name: String,
-    size: usize,
-    ext: String,
     user: String,
     crt: DateTime<Utc>,
     exp: DateTime<Utc>,
+    website: bool,
+    wget: bool,
+    name: String,
+    size: usize,
+    ext: String,
     stream_id: usize,
 }
+
+
+// let f = File::new(
+//     id,
+//     created_at,
+//     expires,
+//     usr,
+//     website,
+//     wget,
+//     file_name,
+//     size,
+//     file_type,
+//     0    
+// );
 
 impl File {
     pub fn new(
         id: uuid::Uuid,
+        crt: DateTime<Utc>,
+        exp: DateTime<Utc>,
+        user: String,
+        website: bool,
+        wget: bool,
         name: String,
         size: usize,
         ext: String,
-        user: String,
-        crt: DateTime<Utc>,
-        exp: DateTime<Utc>,
         stream_id: usize,
     ) -> File {
         File {
             id,
-            name,
-            size,
-            ext,
             user,
             crt,
             exp,
-            stream_id,
+            website,
+            wget,
+            name,
+            size,
+            ext,
+            stream_id
         }
     }
 
     pub fn stream_id(&self) -> usize {
         self.stream_id
     }
+
+    pub fn id(&self) -> uuid::Uuid {
+        self.id
+    }
+
+    pub fn name(&self) -> String {
+        self.name.clone()
+    }
+
+    pub fn set_stream_id(&mut self, id: usize) {
+        self.stream_id = id;
+    }
 }
 
 /// A request from the server -> agent, the agent should upload the file with the specified id
 /// to the url if it has it. Otherwise, it should respond with an error.
-#[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct FileUploadRequest {
     id: uuid::Uuid,
     url: String,
@@ -107,5 +139,9 @@ impl FileUploadRequest {
 
     pub fn id(&self) -> uuid::Uuid {
         self.id
+    }
+
+    pub fn url(&self) -> &str {
+        &self.url
     }
 }

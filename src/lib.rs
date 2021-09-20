@@ -61,7 +61,7 @@ mod traits;
 pub use crate::error::{Error, ErrorLevel, WrappedError};
 pub use crate::message::{File, FileRequest, FileUploadRequest, Message};
 
-use traits::{RxStream, Sendable, TxStream};
+pub use traits::{RxStream, Sendable, TxStream};
 
 /// A wrapper over a websocket, is able to asynchronously send messages down the websocket.
 #[derive(Clone, Copy, Debug)]

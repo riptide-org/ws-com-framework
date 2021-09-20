@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 /// Represents an error when working with a websocket message. Whether serializing, deserializing, or parsing.
 /// Also works as a wrapper for errors between the server and server agents.
-#[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub enum Error {
     /// Attempted to request a file with a uuid version != 4
     InvalidUuidVersion,
@@ -16,11 +16,13 @@ pub enum Error {
     FailedSerialization,
     /// A wrapper over a generic error type
     Generic(WrappedError),
+    /// Websocket not authenticated or disabled
+    InvalidSession,
 }
 
 /// A generic error wrapper over the error types between different applications which may send messages.
 /// Applications are expected to send and parse this error type as needed.
-#[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct WrappedError {
     level: ErrorLevel,
     message: String,
@@ -43,7 +45,7 @@ impl Default for WrappedError {
 }
 
 /// Dictates the criticality of a sent/recieved error.
-#[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub enum ErrorLevel {
     Critical,
     High,
