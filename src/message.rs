@@ -10,12 +10,15 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Serialize, Deserialize, IntoImpl, Eq, PartialEq, Clone)]
 pub enum Message {
     Error(Error),
-    Metadata(FileRequest),
-    File(File),
-    Upload(FileUploadRequest),
+    MetadataRequest(FileRequest),
+    MetadataResponse(Upload),
+    UploadRequest(FileUploadRequest),
     Message(String),
     #[exclude]
     Close(String),
+    AuthReq,
+    #[exclude]
+    AuthResponse(AuthKey)
 }
 
 impl Sendable for Message {}
@@ -25,12 +28,12 @@ impl Receivable for Message {}
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct FileRequest {
     id: uuid::Uuid,
-    stream_id: usize,
+    stream_id: uuid::Uuid,
 }
 
 impl FileRequest {
     /// Create a new request for file metadata
-    pub fn new(id: uuid::Uuid, stream_id: usize) -> Result<FileRequest, Error> {
+    pub fn new(id: uuid::Uuid, stream_id: uuid::Uuid) -> Result<FileRequest, Error> {
         //We want to recquire uuid's be generated with v4
         match id.get_version() {
             Some(uuid::Version::Random) => (),
@@ -45,8 +48,30 @@ impl FileRequest {
     }
 
     /// Get the id of the stream this information is going to be sent to
-    pub fn stream_id(&self) -> usize {
+    pub fn stream_id(&self) -> uuid::Uuid {
         self.stream_id
+    }
+}
+
+/// A metadata upload back to the server, should only be sent from agent -> server
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
+pub struct Upload {
+    stream_id: uuid::Uuid,
+    payload: File,
+}
+
+impl Upload {
+    /// Create new upload response
+    pub fn new(stream_id: uuid::Uuid, payload: File) -> Upload {
+        Upload { stream_id, payload }
+    }
+    ///Get the stream id
+    pub fn get_stream_id(&self) -> uuid::Uuid {
+        self.stream_id
+    }
+    ///Set stream id
+    pub fn set_stream_id(&mut self, stream_id: uuid::Uuid) {
+        self.stream_id = stream_id;
     }
 }
 
@@ -63,22 +88,7 @@ pub struct File {
     name: String,
     size: usize,
     ext: String,
-    stream_id: usize,
 }
-
-
-// let f = File::new(
-//     id,
-//     created_at,
-//     expires,
-//     usr,
-//     website,
-//     wget,
-//     file_name,
-//     size,
-//     file_type,
-//     0    
-// );
 
 impl File {
     pub fn new(
@@ -91,7 +101,6 @@ impl File {
         name: String,
         size: usize,
         ext: String,
-        stream_id: usize,
     ) -> File {
         File {
             id,
@@ -103,12 +112,7 @@ impl File {
             name,
             size,
             ext,
-            stream_id
         }
-    }
-
-    pub fn stream_id(&self) -> usize {
-        self.stream_id
     }
 
     pub fn id(&self) -> uuid::Uuid {
@@ -117,10 +121,6 @@ impl File {
 
     pub fn name(&self) -> String {
         self.name.clone()
-    }
-
-    pub fn set_stream_id(&mut self, id: usize) {
-        self.stream_id = id;
     }
 }
 
@@ -144,4 +144,10 @@ impl FileUploadRequest {
     pub fn url(&self) -> &str {
         &self.url
     }
+}
+
+/// An authorisation response, should be sent only from client -> Server
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
+pub struct AuthKey {
+    key: Vec<u8>,
 }

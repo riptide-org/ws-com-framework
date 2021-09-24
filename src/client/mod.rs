@@ -7,7 +7,7 @@ use crate::traits::{Receivable, Sendable};
 impl Receivable for Error {}
 impl Sendable for Error {}
 impl Receivable for FileRequest {}
-impl Sendable for File {}
+impl Sendable for Upload {}
 impl Receivable for FileUploadRequest {}
 impl Receivable for String {}
 impl Sendable for String {}
