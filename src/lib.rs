@@ -59,7 +59,7 @@ mod traits;
 
 //Re-export relevant types
 pub use crate::error::{Error, ErrorLevel, WrappedError};
-pub use crate::message::{File, FileRequest, FileUploadRequest, Message};
+pub use crate::message::{AuthKey, File, Message, Request};
 
 pub use traits::{RxStream, Sendable, TxStream};
 

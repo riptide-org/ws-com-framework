@@ -147,7 +147,7 @@ impl RxStream for websocket::receiver::Reader<std::net::TcpStream> {
                 };
             }
         };
-        
+
         return Some(Ok(m.into()));
     }
 }
