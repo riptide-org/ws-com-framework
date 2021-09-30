@@ -4,7 +4,6 @@ use crate::message::Message;
 use async_trait::async_trait;
 use futures::SinkExt;
 use futures::StreamExt;
-
 //////// Traits ////////
 
 /// A message type which can be sent.
@@ -172,6 +171,69 @@ impl Into<Message> for websocket::OwnedMessage {
                     status_code: 400,
                 });
                 Message::Close(e.reason)
+            }
+            t => panic!("Type not implemented for websocket parsing: {:?}", t),
+        };
+    }
+}
+
+//////// Implementation for Tokio Tungesnite Websockets ////////
+
+#[async_trait]
+impl TxStream for futures_util::stream::SplitSink<tokio_tungstenite::WebSocketStream<tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>>, tokio_tungstenite::tungstenite::Message> {
+    async fn transmit<T>(&mut self, m: T) -> Result<(), Error> 
+    where
+        T: Into<Message> + Send,
+    {
+        let m: Message = m.into();
+        self.send(m.into()).await.map_err(|e| Error::Generic(WrappedError::new(ErrorLevel::High, e.to_string())))
+    }
+
+    async fn close(self) {
+        self.close().await;
+    }
+}
+
+#[async_trait]
+impl RxStream for futures_util::stream::SplitStream<tokio_tungstenite::WebSocketStream<tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>>> {
+    async fn collect<T>(&mut self) -> Option<Result<T, Error>>
+    where
+        T: From<Message> + Send,
+    {
+        if let Some(f) = self.next().await {
+            //Convert type into intermediary
+            let f: Result<Message, Error> = f
+                .map(|m| m.into())
+                .map_err(|e| Error::Generic(WrappedError::new(ErrorLevel::High, e.to_string())));
+            
+            //Convert our Message type into whatever type this client requires
+            let f: Result<T, Error> = f.map(|m| m.into());
+            return Some(f);
+        }
+        None
+    }
+}
+
+impl From<Message> for tokio_tungstenite::tungstenite::Message {
+    fn from(s: Message) -> Self {
+        let b = bincode::serialize(&s).expect("Serialisation of message failed!"); //Saftey: Static type, tested
+        Self::Binary(b)
+    }
+}
+
+impl Into<Message> for tokio_tungstenite::tungstenite::Message {
+    fn into(self) -> Message {
+        return match self {
+            tokio_tungstenite::tungstenite::Message::Binary(b) => {
+                let b = &b;
+                bincode::deserialize(b).unwrap()
+            }
+            tokio_tungstenite::tungstenite::Message::Close(e) => {
+                let e = e.unwrap_or(tokio_tungstenite::tungstenite::protocol::CloseFrame {
+                    reason: "Unknown Reason".into(),
+                    code: tokio_tungstenite::tungstenite::protocol::frame::coding::CloseCode::Abnormal,
+                });
+                Message::Close(e.reason.to_string())
             }
             t => panic!("Type not implemented for websocket parsing: {:?}", t),
         };

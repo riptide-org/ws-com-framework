@@ -63,6 +63,8 @@ pub use crate::message::{AuthKey, File, Message, Request};
 
 pub use traits::{RxStream, Sendable, TxStream};
 
+//TODO implement feature flags for different traits. I.e. websockets, tungesnite, websockets, etc.
+
 /// A wrapper over a websocket, is able to asynchronously send messages down the websocket.
 #[derive(Clone, Copy, Debug)]
 pub struct Sender<T>

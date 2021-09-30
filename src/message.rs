@@ -125,5 +125,5 @@ impl Request {
 /// An authorisation response, should be sent only from client -> Server
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct AuthKey {
-    key: Vec<u8>,
+    pub key: Vec<u8>,
 }
