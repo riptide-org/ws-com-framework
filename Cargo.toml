@@ -9,18 +9,28 @@ edition = "2018"
 chrono = { version = "0.4", features = ["serde"] }
 serde = {version = "1.0", features = ["derive"] }
 serde_derive = "1.0"
-bincode = "1.2.1"
-warp = "0.3" #TODO this dependency is *enourmous* and we really only need it to enable conversions to its ws::Message type...
-uuid = {version = "0.8", features = ["serde", "v4"]}
-futures="0.3.16"
-async-trait = "0.1.51"
-tokio = { version = "1", features = ["full"] }
-websocket = "0.26.2"
 macros = { path = "./macros" } #Eventually this will be split off into it's own crate (workspace/github repo)
-# These following deps should be set behind a feature flag
-tokio-tungstenite = "0.15.0"
-futures-util="0.3.17"
+bincode = "1.2.1"
+uuid = {version = "0.8", features = ["serde", "v4"]}
+async-trait = "0.1.51"
+
+##### Optional Deps #####
+futures={ version = "0.3.16", optional = true, default-features = false }
+#Tungstenite Feature
+tokio-tungstenite = { version = "0.15.0", optional=true }
+futures-util={ version = "0.3.17", optional=true, default-features = false }
+#Tokio Feature
+tokio = { version = "1", optional = true, default-features = false, features = ["sync"] }
+#Websocket Feature
+websocket = { version = "0.26.2", optional = true, default-features = false, features = ["sync"] }
+#Warp Feature
+warp = { version = "0.3", optional = true, default-features = false, features = ["websocket"] }
 
 [features]
+default=["client", "wrapper-tokio"]
 server = []
 client = []
+wrapper-tungstenite = ["tokio-tungstenite", "futures-util", "futures", "tokio"]
+wrapper-tokio=["tokio"]
+wrapper-websocket = ["websocket"]
+wrapper-warp = ["warp", "futures"]
