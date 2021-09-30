@@ -88,14 +88,14 @@ where
     where
         E: Into<Message> + Sendable,
     {
-        self.tx.transmit(m.into()).await
+        self.tx.__transmit(m.into()).await
     }
 
     /// Close the sending side of this websocket connection.
     #[allow(unused_must_use)]
     pub async fn close(self) {
         //We do not need to check this return type, it wouldn't give us any useful information for doing so.
-        self.tx.close();
+        self.tx.__close();
     }
 
     ///Acquire the underlying tx stream, this consumes the sender wrapper.
@@ -127,7 +127,7 @@ where
     /// Otherwise returns a result containing the value, for most implementation of the websocket
     /// the result is infalliable, however some types this may be wrapped over are not infallible.
     pub async fn next(&mut self) -> Option<Result<Message, Error>> {
-        self.rx.collect().await
+        self.rx.__collect().await
     }
 
     ///Acquire the underlying rx stream, this consumes the reciever wrapper.

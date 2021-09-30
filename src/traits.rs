@@ -15,16 +15,16 @@ pub trait Receivable {}
 /// A trait indicating this is a valid tx stream, and therefore will implement the required methods.
 #[async_trait]
 pub trait TxStream {
-    async fn transmit<T>(&mut self, m: T) -> Result<(), Error>
+    async fn __transmit<T>(&mut self, m: T) -> Result<(), Error>
     where
         T: Into<Message> + Send;
-    async fn close(self);
+    async fn __close(self);
 }
 
 /// A trait indicating this is a valid rx stream, and therefore will implement the required methods.
 #[async_trait]
 pub trait RxStream {
-    async fn collect<T>(&mut self) -> Option<Result<T, Error>>
+    async fn __collect<T>(&mut self) -> Option<Result<T, Error>>
     where
         T: From<Message> + Send;
 }
@@ -33,7 +33,7 @@ pub trait RxStream {
 
 #[async_trait]
 impl TxStream for futures::stream::SplitSink<warp::ws::WebSocket, warp::ws::Message> {
-    async fn transmit<T>(&mut self, m: T) -> Result<(), Error>
+    async fn __transmit<T>(&mut self, m: T) -> Result<(), Error>
     where
         T: Into<Message> + Send,
     {
@@ -41,14 +41,15 @@ impl TxStream for futures::stream::SplitSink<warp::ws::WebSocket, warp::ws::Mess
             .await
             .map_err(|e| Error::Generic(WrappedError::new(ErrorLevel::High, e.to_string())))
     }
-    async fn close(self) {
-        self.close().await;
+    #[allow(unused_must_use)]
+    async fn __close(mut self) {
+        self.close().await; //TODO refactor to return result
     }
 }
 
 #[async_trait]
 impl RxStream for futures::stream::SplitStream<warp::ws::WebSocket> {
-    async fn collect<T>(&mut self) -> Option<Result<T, Error>>
+    async fn __collect<T>(&mut self) -> Option<Result<T, Error>>
     where
         T: From<Message> + Send,
     {
@@ -84,21 +85,21 @@ impl std::convert::Into<Message> for warp::ws::Message {
 
 #[async_trait]
 impl TxStream for tokio::sync::mpsc::UnboundedSender<Message> {
-    async fn transmit<T>(&mut self, m: T) -> Result<(), Error>
+    async fn __transmit<T>(&mut self, m: T) -> Result<(), Error>
     where
         T: Into<Message> + Send,
     {
         self.send(m.into())
             .map_err(|e| Error::Generic(WrappedError::new(ErrorLevel::High, e.to_string())))
     }
-    async fn close(self) {
-        self.close().await;
+    async fn __close(self) {
+        //Doesn't exist! This should merely be dropped out of scope to close.
     }
 }
 
 #[async_trait]
 impl RxStream for tokio::sync::mpsc::UnboundedReceiver<Message> {
-    async fn collect<T>(&mut self) -> Option<Result<T, Error>>
+    async fn __collect<T>(&mut self) -> Option<Result<T, Error>>
     where
         T: From<Message> + Send,
     {
@@ -112,7 +113,7 @@ impl RxStream for tokio::sync::mpsc::UnboundedReceiver<Message> {
 //////// Implmenation for websockets split streams ////////
 #[async_trait]
 impl TxStream for websocket::sender::Writer<std::net::TcpStream> {
-    async fn transmit<T>(&mut self, m: T) -> Result<(), Error>
+    async fn __transmit<T>(&mut self, m: T) -> Result<(), Error>
     where
         T: Into<Message> + Send,
     {
@@ -123,14 +124,14 @@ impl TxStream for websocket::sender::Writer<std::net::TcpStream> {
     }
 
     #[allow(unused_must_use)]
-    async fn close(self) {
+    async fn __close(self) {
         self.shutdown_all();
     }
 }
 
 #[async_trait]
 impl RxStream for websocket::receiver::Reader<std::net::TcpStream> {
-    async fn collect<T>(&mut self) -> Option<Result<T, Error>>
+    async fn __collect<T>(&mut self) -> Option<Result<T, Error>>
     where
         T: From<Message> + Send,
     {
@@ -181,22 +182,22 @@ impl Into<Message> for websocket::OwnedMessage {
 
 #[async_trait]
 impl TxStream for futures_util::stream::SplitSink<tokio_tungstenite::WebSocketStream<tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>>, tokio_tungstenite::tungstenite::Message> {
-    async fn transmit<T>(&mut self, m: T) -> Result<(), Error> 
+    async fn __transmit<T>(&mut self, m: T) -> Result<(), Error> 
     where
         T: Into<Message> + Send,
     {
         let m: Message = m.into();
         self.send(m.into()).await.map_err(|e| Error::Generic(WrappedError::new(ErrorLevel::High, e.to_string())))
     }
-
-    async fn close(self) {
-        self.close().await;
+    #[allow(unused_must_use)]
+    async fn __close(mut self) {
+        self.close().await; //TODO refactor to return result
     }
 }
 
 #[async_trait]
 impl RxStream for futures_util::stream::SplitStream<tokio_tungstenite::WebSocketStream<tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>>> {
-    async fn collect<T>(&mut self) -> Option<Result<T, Error>>
+    async fn __collect<T>(&mut self) -> Option<Result<T, Error>>
     where
         T: From<Message> + Send,
     {
