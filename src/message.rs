@@ -56,7 +56,7 @@ impl Upload {
 /// This should be sent in response to a FileRequest being recieved
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct File {
-    id: uuid::Uuid,
+    id: String,
     user: String,
     crt: DateTime<Utc>,
     exp: DateTime<Utc>,
@@ -69,7 +69,7 @@ pub struct File {
 
 impl File {
     pub fn new(
-        id: uuid::Uuid,
+        id: String,
         crt: DateTime<Utc>,
         exp: DateTime<Utc>,
         user: String,
@@ -92,29 +92,29 @@ impl File {
         }
     }
 
-    pub fn id(&self) -> uuid::Uuid {
-        self.id
+    pub fn id(&self) -> &str {
+        &self.id
     }
 
-    pub fn name(&self) -> String {
-        self.name.clone()
+    pub fn name(&self) -> &str {
+        &self.name
     }
 }
 
 /// A request from the server -> agent for the agent to upload some data
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct Request {
-    id: uuid::Uuid,
+    id: String,
     url: String,
 }
 
 impl Request {
-    pub fn new(id: uuid::Uuid, url: String) -> Self {
+    pub fn new(id: String, url: String) -> Self {
         Self { id, url }
     }
 
-    pub fn id(&self) -> uuid::Uuid {
-        self.id
+    pub fn id(&self) -> &str {
+        &self.id
     }
 
     pub fn url(&self) -> &str {
@@ -123,7 +123,8 @@ impl Request {
 }
 
 /// An authorisation response, should be sent only from client -> Server
+/// Should contain 32 bytes of randomly generated hex data.
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct AuthKey {
-    pub key: Vec<u8>,
+    pub key: [u8;32],
 }

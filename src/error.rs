@@ -6,8 +6,6 @@ use serde::{Deserialize, Serialize};
 /// Also works as a wrapper for errors between the server and server agents.
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub enum Error {
-    /// Attempted to request a file with a uuid version != 4
-    InvalidUuidVersion,
     /// File upload failed
     FailedFileUpload,
     /// The requested file doesn't exist
@@ -49,7 +47,6 @@ impl Default for WrappedError {
 pub enum ErrorLevel {
     Critical,
     High,
-    Medium,
     Low,
     Debug,
     Info,

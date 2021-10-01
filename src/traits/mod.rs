@@ -15,7 +15,7 @@ mod tokio;
 
 #[cfg(not(any(feature = "wrapper-tungstenite", feature = "wrapper-warp", feature = "wrapper-websocket", feature = "wrapper-tokio")))]
 compile_error!(
-    "WARNING: This crate does nothing unless a wrapper flag is set!"
+    "ERROR: This crate does nothing unless a wrapper flag is set!"
 );
 
 //////// Traits ////////

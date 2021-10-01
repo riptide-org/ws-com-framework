@@ -6,12 +6,11 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+macros = { path = "./macros" } #Eventually this will be split off into it's own crate (workspace/github repo)
 chrono = { version = "0.4", features = ["serde"] }
 serde = {version = "1.0", features = ["derive"] }
 serde_derive = "1.0"
-macros = { path = "./macros" } #Eventually this will be split off into it's own crate (workspace/github repo)
 bincode = "1.2.1"
-uuid = {version = "0.8", features = ["serde", "v4"]}
 async-trait = "0.1.51"
 
 ##### Optional Deps #####
@@ -27,7 +26,7 @@ websocket = { version = "0.26.2", optional = true, default-features = false, fea
 warp = { version = "0.3", optional = true, default-features = false, features = ["websocket"] }
 
 [features]
-default=["client", "wrapper-tokio"]
+default=["client", "wrapper-tungstenite", "wrapper-tokio", "wrapper-websocket", "wrapper-warp"]
 server = []
 client = []
 wrapper-tungstenite = ["tokio-tungstenite", "futures-util", "futures", "tokio"]
