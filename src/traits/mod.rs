@@ -13,11 +13,6 @@ mod websocket;
 #[cfg(feature = "wrapper-tokio")]
 mod tokio;
 
-#[cfg(not(any(feature = "wrapper-tungstenite", feature = "wrapper-warp", feature = "wrapper-websocket", feature = "wrapper-tokio")))]
-compile_error!(
-    "ERROR: This crate does nothing unless a wrapper flag is set!"
-);
-
 //////// Traits ////////
 
 /// A message type which can be sent.

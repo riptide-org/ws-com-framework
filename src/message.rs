@@ -29,8 +29,8 @@ impl Receivable for Message {}
 /// A metadata upload back to the server, should only be sent from agent -> server
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct Upload {
-    stream_id: String,
-    payload: File,
+    pub stream_id: String,
+    pub payload: File,
 }
 
 impl Upload {
@@ -56,15 +56,15 @@ impl Upload {
 /// This should be sent in response to a FileRequest being recieved
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct File {
-    id: String,
-    user: String,
-    crt: DateTime<Utc>,
-    exp: DateTime<Utc>,
-    website: bool,
-    wget: bool,
-    name: String,
-    size: usize,
-    ext: String,
+    pub id: String,
+    pub user: String,
+    pub crt: DateTime<Utc>,
+    pub exp: DateTime<Utc>,
+    pub website: bool,
+    pub wget: bool,
+    pub name: String,
+    pub size: usize,
+    pub ext: String,
 }
 
 impl File {
@@ -104,8 +104,8 @@ impl File {
 /// A request from the server -> agent for the agent to upload some data
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct Request {
-    id: String,
-    url: String,
+    pub id: String,
+    pub url: String,
 }
 
 impl Request {
