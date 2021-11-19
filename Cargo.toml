@@ -33,3 +33,6 @@ wrapper-tungstenite = ["tokio-tungstenite", "futures-util", "futures", "tokio"]
 wrapper-tokio=["tokio"]
 wrapper-websocket = ["websocket"]
 wrapper-warp = ["warp", "futures"]
+
+[dev-dependencies]
+tokio = { version = "1", features = ["full"] }
