@@ -1,11 +1,10 @@
 //! Implementation for tokios unbounded sender
 
-use crate::error::{ Error, ErrorLevel, WrappedError };
+use crate::error::{Error, ErrorLevel, WrappedError};
 use crate::message::Message;
-use crate::traits::{ RxStream, TxStream };
+use crate::traits::{RxStream, TxStream};
 use async_trait::async_trait;
 
-#[cfg(feature = "wrapper-tokio")]
 #[async_trait]
 impl TxStream for tokio::sync::mpsc::UnboundedSender<Message> {
     async fn __transmit<T>(&mut self, m: T) -> Result<(), Error>
@@ -20,7 +19,6 @@ impl TxStream for tokio::sync::mpsc::UnboundedSender<Message> {
     }
 }
 
-#[cfg(feature = "wrapper-tokio")]
 #[async_trait]
 impl RxStream for tokio::sync::mpsc::UnboundedReceiver<Message> {
     async fn __collect<T>(&mut self) -> Option<Result<T, Error>>

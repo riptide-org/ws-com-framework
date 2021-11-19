@@ -139,6 +139,8 @@ where
 //TODO lock certain functions in the general libraries (error + message) behind feature flags.
 
 #[cfg(test)]
+#[doc(hidden)]
+#[cfg(not(tarpaulin_include))]
 mod macros {
     use macros::IntoImpl;
     #[test]

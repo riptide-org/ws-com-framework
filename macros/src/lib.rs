@@ -63,8 +63,7 @@ pub fn derive_into_function_websockets(input: TokenStream) -> TokenStream {
                         syn::Type::Path(p) => extract_path_segements(p.path.segments.iter().collect()),
                         _ => panic!("Unsupported type!"),
                     })
-                    .collect::<Vec<Vec<syn::Ident>>>()
-                    .clone();
+                    .collect::<Vec<Vec<syn::Ident>>>();
                 if !path_segs.is_empty() {
                     let path_segs = merge_idents(path_segs[0].clone());
                     if scanned_types.contains(&path_segs) {

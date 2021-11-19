@@ -13,6 +13,8 @@ impl Receivable for String {}
 
 //////// Tests ////////
 
+#[cfg(not(tarpaulin_include))]
+#[doc(hidden)]
 #[cfg(test)]
 mod server {
     use crate::message::Message;

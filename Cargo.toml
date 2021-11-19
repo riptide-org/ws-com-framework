@@ -1,12 +1,16 @@
 [package]
 name = "ws-com-framework"
-version = "0.1.0"
-edition = "2018"
+version = "1.0.0"
+authors = ["Josiah Bull <josiah.bull7@gmail.com>"]
+edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[workspace]
+members = [
+    "macros/"
+]
 
 [dependencies]
-macros = { path = "./macros" } #Eventually this will be split off into it's own crate (workspace/github repo)
+macros = { path = "macros/" }
 chrono = { version = "0.4", features = ["serde"] }
 serde = {version = "1.0", features = ["derive"] }
 serde_derive = "1.0"
@@ -26,9 +30,9 @@ websocket = { version = "0.26.2", optional = true, default-features = false, fea
 warp = { version = "0.3", optional = true, default-features = false, features = ["websocket"] }
 
 [features]
-default=["client", "wrapper-tungstenite", "wrapper-tokio", "wrapper-websocket", "wrapper-warp"]
-server = []
+default = ["client", "wrapper-tungstenite", "wrapper-tokio", "wrapper-websocket", "wrapper-warp"]
 client = []
+server = []
 wrapper-tungstenite = ["tokio-tungstenite", "futures-util", "futures", "tokio"]
 wrapper-tokio=["tokio"]
 wrapper-websocket = ["websocket"]

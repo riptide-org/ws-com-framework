@@ -1,12 +1,11 @@
 //! Implementation for warp websockets
 
-use crate::error::{ Error, ErrorLevel, WrappedError };
+use crate::error::{Error, ErrorLevel, WrappedError};
 use crate::message::Message;
-use crate::traits::{ RxStream, TxStream };
+use crate::traits::{RxStream, TxStream};
 use async_trait::async_trait;
-use futures::{ SinkExt, StreamExt };
+use futures::{SinkExt, StreamExt};
 
-#[cfg(feature = "wrapper-warp")]
 #[async_trait]
 impl TxStream for futures::stream::SplitSink<warp::ws::WebSocket, warp::ws::Message> {
     async fn __transmit<T>(&mut self, m: T) -> Result<(), Error>
@@ -23,7 +22,6 @@ impl TxStream for futures::stream::SplitSink<warp::ws::WebSocket, warp::ws::Mess
     }
 }
 
-#[cfg(feature = "wrapper-warp")]
 #[async_trait]
 impl RxStream for futures::stream::SplitStream<warp::ws::WebSocket> {
     async fn __collect<T>(&mut self) -> Option<Result<T, Error>>
@@ -45,7 +43,6 @@ impl RxStream for futures::stream::SplitStream<warp::ws::WebSocket> {
     }
 }
 
-#[cfg(feature = "wrapper-warp")]
 impl std::convert::From<Message> for warp::ws::Message {
     fn from(s: Message) -> warp::ws::Message {
         let b = bincode::serialize(&s).expect("Serialisation of message failed!"); //Saftey: Static type, tested
@@ -53,7 +50,6 @@ impl std::convert::From<Message> for warp::ws::Message {
     }
 }
 
-#[cfg(feature = "wrapper-warp")]
 impl std::convert::Into<Message> for warp::ws::Message {
     fn into(self) -> Message {
         bincode::deserialize(self.as_bytes()).unwrap()

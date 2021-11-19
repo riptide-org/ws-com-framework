@@ -1,11 +1,10 @@
 //! Implmenation for websockets split streams
 
-use crate::error::{ Error, ErrorLevel, WrappedError };
+use crate::error::{Error, ErrorLevel, WrappedError};
 use crate::message::Message;
-use crate::traits::{ RxStream, TxStream };
+use crate::traits::{RxStream, TxStream};
 use async_trait::async_trait;
 
-#[cfg(feature="wrapper-websocket")]
 #[async_trait]
 impl TxStream for websocket::sender::Writer<std::net::TcpStream> {
     async fn __transmit<T>(&mut self, m: T) -> Result<(), Error>
@@ -24,7 +23,6 @@ impl TxStream for websocket::sender::Writer<std::net::TcpStream> {
     }
 }
 
-#[cfg(feature="wrapper-websocket")]
 #[async_trait]
 impl RxStream for websocket::receiver::Reader<std::net::TcpStream> {
     async fn __collect<T>(&mut self) -> Option<Result<T, Error>>
@@ -48,7 +46,6 @@ impl RxStream for websocket::receiver::Reader<std::net::TcpStream> {
     }
 }
 
-#[cfg(feature="wrapper-websocket")]
 impl From<Message> for websocket::OwnedMessage {
     fn from(s: Message) -> websocket::OwnedMessage {
         let b = bincode::serialize(&s).expect("Serialisation of message failed!"); //Saftey: Static type, tested
@@ -56,7 +53,6 @@ impl From<Message> for websocket::OwnedMessage {
     }
 }
 
-#[cfg(feature="wrapper-websocket")]
 impl Into<Message> for websocket::OwnedMessage {
     fn into(self) -> Message {
         return match self {

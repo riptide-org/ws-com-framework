@@ -1,17 +1,17 @@
 //! Contains traits used by the crate
-use crate::error::{Error};
+use crate::error::Error;
 use crate::message::Message;
 use async_trait::async_trait;
 
 // Individual configurations which can be loaded depending on what features are required.
+#[cfg(feature = "wrapper-tokio")]
+mod tokio;
 #[cfg(feature = "wrapper-tungstenite")]
 mod tokio_tungstenite;
 #[cfg(feature = "wrapper-warp")]
 mod warp;
 #[cfg(feature = "wrapper-websocket")]
 mod websocket;
-#[cfg(feature = "wrapper-tokio")]
-mod tokio;
 
 //////// Traits ////////
 

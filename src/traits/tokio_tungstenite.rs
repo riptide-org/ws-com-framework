@@ -1,20 +1,28 @@
 //! Implementation for tokio-tungstenite
 
-use async_trait::async_trait;
-use crate::traits::{ RxStream, TxStream };
+use crate::error::{Error, ErrorLevel, WrappedError};
 use crate::message::Message;
-use crate::error::{ Error, ErrorLevel, WrappedError };
-use futures::{ StreamExt, SinkExt };
+use crate::traits::{RxStream, TxStream};
+use async_trait::async_trait;
+use futures::{SinkExt, StreamExt};
 
-#[cfg(feature = "wrapper-tungstenite")]
 #[async_trait]
-impl TxStream for futures_util::stream::SplitSink<tokio_tungstenite::WebSocketStream<tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>>, tokio_tungstenite::tungstenite::Message> {
-    async fn __transmit<T>(&mut self, m: T) -> Result<(), Error> 
+impl TxStream
+    for futures_util::stream::SplitSink<
+        tokio_tungstenite::WebSocketStream<
+            tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>,
+        >,
+        tokio_tungstenite::tungstenite::Message,
+    >
+{
+    async fn __transmit<T>(&mut self, m: T) -> Result<(), Error>
     where
         T: Into<Message> + Send,
     {
         let m: Message = m.into();
-        self.send(m.into()).await.map_err(|e| Error::Generic(WrappedError::new(ErrorLevel::High, e.to_string())))
+        self.send(m.into())
+            .await
+            .map_err(|e| Error::Generic(WrappedError::new(ErrorLevel::High, e.to_string())))
     }
     #[allow(unused_must_use)]
     async fn __close(mut self) {
@@ -22,9 +30,14 @@ impl TxStream for futures_util::stream::SplitSink<tokio_tungstenite::WebSocketSt
     }
 }
 
-#[cfg(feature = "wrapper-tungstenite")]
 #[async_trait]
-impl RxStream for futures_util::stream::SplitStream<tokio_tungstenite::WebSocketStream<tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>>> {
+impl RxStream
+    for futures_util::stream::SplitStream<
+        tokio_tungstenite::WebSocketStream<
+            tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>,
+        >,
+    >
+{
     async fn __collect<T>(&mut self) -> Option<Result<T, Error>>
     where
         T: From<Message> + Send,
@@ -34,7 +47,7 @@ impl RxStream for futures_util::stream::SplitStream<tokio_tungstenite::WebSocket
             let f: Result<Message, Error> = f
                 .map(|m| m.into())
                 .map_err(|e| Error::Generic(WrappedError::new(ErrorLevel::High, e.to_string())));
-            
+
             //Convert our Message type into whatever type this client requires
             let f: Result<T, Error> = f.map(|m| m.into());
             return Some(f);
@@ -43,7 +56,6 @@ impl RxStream for futures_util::stream::SplitStream<tokio_tungstenite::WebSocket
     }
 }
 
-#[cfg(feature = "wrapper-tungstenite")]
 impl From<Message> for tokio_tungstenite::tungstenite::Message {
     fn from(s: Message) -> Self {
         let b = bincode::serialize(&s).expect("Serialisation of message failed!"); //Saftey: Static type, tested
@@ -51,7 +63,6 @@ impl From<Message> for tokio_tungstenite::tungstenite::Message {
     }
 }
 
-#[cfg(feature = "wrapper-tungstenite")]
 impl Into<Message> for tokio_tungstenite::tungstenite::Message {
     fn into(self) -> Message {
         return match self {
