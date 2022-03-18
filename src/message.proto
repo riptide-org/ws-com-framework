@@ -1,0 +1,43 @@
+syntax = "proto3";
+package events;
+
+message FspComm {
+    /*
+    * Request for a file or metadata upload to the provided location
+    */
+    message UploadTo {
+        bytes file_id = 1;
+        string upload_url = 2;
+    }
+
+    /*
+    * An authentication response to an auth challenge, containing the expected public_id
+    * and passcode.
+    */
+    message Auth {
+        bytes public_id = 1;
+        bytes passcode = 2;
+    }
+
+    /*
+    * A ping message containing optional data about the status of the server.
+    */
+    message Pong {
+        bytes status = 1;
+    }
+
+    enum Type {
+        UNKNOWN = 0;
+        OK = 1;
+        ERROR = 2;
+        UPLOAD_TO = 3;
+        METADATA = 4;
+        AUTHREQ = 5;
+        AUTH = 6;
+        PING = 7;
+        PONG = 8;
+    }
+
+    Type type = 1;
+    bytes value = 2;
+}

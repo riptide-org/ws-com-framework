@@ -4,6 +4,10 @@ use chrono::prelude::*;
 use macros::IntoImpl;
 use serde::{Deserialize, Serialize};
 
+pub mod websocket_message {
+    include!(concat!(env!("OUT_DIR"), "/events.rs"));
+}
+
 /// A message which can be sent between the server and client. Can hold
 /// A variety of values and types, depending on which action needs to be
 /// carried out.
