@@ -1,53 +1,23 @@
-//! Handles errors
 
-use serde::{Deserialize, Serialize};
 
-/// Represents an error when working with a websocket message. Whether serializing, deserializing, or parsing.
-/// Also works as a wrapper for errors between the server and server agents.
-#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
+#[derive(Debug, Clone)]
 pub enum Error {
-    /// File upload failed
-    FailedFileUpload,
-    /// The requested file doesn't exist
-    FileDoesntExist,
-    // Unable to serialize this file
-    FailedSerialization,
-    /// A wrapper over a generic error type
-    Generic(WrappedError),
-    /// Websocket not authenticated or disabled
-    InvalidSession,
+    ByteDecodeError(&'static str),
 }
 
-/// A generic error wrapper over the error types between different applications which may send messages.
-/// Applications are expected to send and parse this error type as needed.
-#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
-pub struct WrappedError {
-    level: ErrorLevel,
-    message: String,
-}
 
-impl WrappedError {
-    pub fn new<S: AsRef<str>>(level: ErrorLevel, message: S) -> WrappedError {
-        let message = message.as_ref().to_owned();
-        WrappedError { level, message }
+impl From<prost::DecodeError> for Error {
+    fn from(err: prost::DecodeError) -> Self {
+        Self::ByteDecodeError(&err.to_string())
     }
 }
 
-impl Default for WrappedError {
-    fn default() -> WrappedError {
-        WrappedError {
-            level: ErrorLevel::Critical,
-            message: "An unspecified error occured!".to_owned(),
+impl std::fmt::Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Error::ByteDecodeError(e) => write!(f, "failed to decode bytes as valid message {}", e),
         }
     }
 }
 
-/// Dictates the criticality of a sent/recieved error.
-#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
-pub enum ErrorLevel {
-    Critical,
-    High,
-    Low,
-    Debug,
-    Info,
-}
+impl std::error::Error for Error { }

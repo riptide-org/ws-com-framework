@@ -11,6 +11,21 @@ message FspComm {
     }
 
     /*
+    * Request for a file or metadata upload to the provided location
+    */
+    message Metadata {
+        bytes file_id = 1;
+        string upload_url = 2;
+    }
+
+    /*
+    * An authentication challenge
+    */
+    message AuthReq {
+        bytes public_id = 1;
+    }
+
+    /*
     * An authentication response to an auth challenge, containing the expected public_id
     * and passcode.
     */
@@ -23,11 +38,17 @@ message FspComm {
     * A ping message containing optional data about the status of the server.
     */
     message Pong {
-        bytes status = 1;
+        optional string status = 1;
+    }
+
+    /*
+    * An error has occured
+    */
+    message Error {
+        optional string reason = 1;
     }
 
     enum Type {
-        UNKNOWN = 0;
         OK = 1;
         ERROR = 2;
         UPLOAD_TO = 3;

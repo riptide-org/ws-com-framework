@@ -2,3 +2,4 @@
 Cargo.lock
 *target*
 lcov.info
+debug.rs

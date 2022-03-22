@@ -5,43 +5,8 @@ authors = ["Josiah Bull <josiah.bull7@gmail.com>"]
 edition = "2021"
 build = "build.rs"
 
-[workspace]
-members = [
-    "macros/"
-]
-
 [dependencies]
 prost = "0.9"
-macros = { path = "macros/" }
-chrono = { version = "0.4", features = ["serde"] }
-serde = {version = "1.0", features = ["derive"] }
-serde_derive = "1.0"
-bincode = "1.2.1"
-async-trait = "0.1.51"
-
-##### Optional Deps #####
-futures={ version = "0.3.16", optional = true, default-features = false }
-#Tungstenite Feature
-tokio-tungstenite = { version = "0.15.0", optional=true }
-futures-util={ version = "0.3.17", optional=true, default-features = false }
-#Tokio Feature
-tokio = { version = "1", optional = true, default-features = false, features = ["sync"] }
-#Websocket Feature
-websocket = { version = "0.26.2", optional = true, default-features = false, features = ["sync"] }
-#Warp Feature
-warp = { version = "0.3", optional = true, default-features = false, features = ["websocket"] }
-
-[features]
-default = ["client", "wrapper-tungstenite", "wrapper-tokio", "wrapper-websocket", "wrapper-warp"]
-client = []
-server = []
-wrapper-tungstenite = ["tokio-tungstenite", "futures-util", "futures", "tokio"]
-wrapper-tokio=["tokio"]
-wrapper-websocket = ["websocket"]
-wrapper-warp = ["warp", "futures"]
 
 [build-dependencies]
 prost-build = "0.9.0"
-
-[dev-dependencies]
-tokio = { version = "1", features = ["full"] }
