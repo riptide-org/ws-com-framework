@@ -134,7 +134,7 @@ pub mod websocket_message {
     impl TryFrom<Vec<u8>> for FspComm {
         type Error = super::Error;
         fn try_from(msg: Vec<u8>) -> Result<Self, super::Error> {
-            todo!()
+            Ok(Self::decode(&msg[..])?)
         }
     }
 
@@ -290,7 +290,7 @@ enum Message {
 impl Message {
     /// Attempt to convert the provided type into a valid protobuf3 stream.
     /// Validates that types are of the correct length before conversion.
-    fn into_bytes(self) -> Result<Vec<u8>, Error> {
+    pub fn into_bytes(self) -> Result<Vec<u8>, Error> {
         use websocket_message::FspComm;
         let tmp: FspComm = self.try_into()?;
         Ok(into_bytes!(tmp))
@@ -298,7 +298,7 @@ impl Message {
 
     /// Attempt to decode a prost byte stream into this type. Note that the
     /// stream must be encoded using the correct protobuf3 protocols.
-    fn from_bytes(input: Vec<u8>) -> Result<Self, Error> {
+    pub fn from_bytes(input: Vec<u8>) -> Result<Self, Error> {
         use websocket_message::FspComm;
         let tmp: FspComm = input.try_into()?;
         Ok(tmp.try_into()?)
