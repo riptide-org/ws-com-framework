@@ -49,14 +49,14 @@ message FspComm {
     }
 
     enum Type {
-        OK = 1;
-        ERROR = 2;
-        UPLOAD_TO = 3;
-        METADATA = 4;
-        AUTHREQ = 5;
-        AUTH = 6;
-        PING = 7;
-        PONG = 8;
+        OK = 0;
+        ERROR = 1;
+        UPLOAD_TO = 2;
+        METADATA = 3;
+        AUTHREQ = 4;
+        AUTH = 5;
+        PING = 6;
+        PONG = 7;
     }
 
     Type type = 1;
