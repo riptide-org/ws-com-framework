@@ -269,6 +269,7 @@ pub enum Message {
 impl Message {
     /// Attempt to convert the provided type into a valid protobuf3 strestaticm.
     /// Validates that types are of the correct length before conversion.
+    #[deprecated(since="1.0.0", note="please use `TryFrom` instead")]
     pub fn into_bytes(self) -> Result<Vec<u8>, Error> {
         use websocket_message::FspComm;
         let tmp: FspComm = self.try_into()?;
@@ -277,9 +278,34 @@ impl Message {
 
     /// Attempt to decode a prost byte stream into this type. Note that the
     /// stream must be encoded using the correct protobuf3 protocols.
+    #[deprecated(since="1.0.0", note="please use `TryFrom` instead")]
     pub fn from_bytes(input: &[u8]) -> Result<Self, Error> {
         use websocket_message::FspComm;
         let tmp: FspComm = input.try_into()?;
         Ok(tmp.try_into()?)
+    }
+}
+
+impl TryFrom<Vec<u8>> for Message {
+    type Error = Error;
+    #[allow(deprecated)] //TEMP
+    fn try_from(value: Vec<u8>) -> Result<Self, Error> {
+        Self::from_bytes(&value[..])
+    }
+}
+
+impl TryFrom<&[u8]> for Message {
+    type Error = Error;
+    fn try_from(value: &[u8]) -> Result<Self, Error> {
+        #[allow(deprecated)] //TEMP
+        Self::from_bytes(value)
+    }
+}
+
+impl TryFrom<Message> for Vec<u8> {
+    type Error = Error;
+    #[allow(deprecated)] //TEMP
+    fn try_from(value: Message) -> Result<Self, Error> {
+        value.into_bytes()
     }
 }

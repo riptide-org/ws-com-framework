@@ -5,7 +5,7 @@ Please include a summary of the change and which issue is fixed. Please also inc
 Fixes # (issue)
 
 # Todo
-- [ ] List what should be changed about your projet here!
+- [ ] List what should be changed about your project here!
 
 # Checklist:
 
@@ -15,3 +15,5 @@ Fixes # (issue)
 - [ ] Comments have been written for my code.
 - [ ] The docker-compose file is not broken.
 - [ ] The readme does not need updating.
+- [ ] Correct base branch set.
+- [ ] Version has been updated if appropriate.
