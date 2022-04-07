@@ -51,7 +51,7 @@
     unstable_features,
     unused_import_braces,
     unused_qualifications,
-    deprecated,
+    deprecated
 )]
 
 pub mod error;

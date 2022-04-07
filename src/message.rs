@@ -269,7 +269,7 @@ pub enum Message {
 impl Message {
     /// Attempt to convert the provided type into a valid protobuf3 strestaticm.
     /// Validates that types are of the correct length before conversion.
-    #[deprecated(since="1.0.0", note="please use `TryFrom` instead")]
+    #[deprecated(since = "1.0.0", note = "please use `TryFrom` instead")]
     pub fn into_bytes(self) -> Result<Vec<u8>, Error> {
         use websocket_message::FspComm;
         let tmp: FspComm = self.try_into()?;
@@ -278,7 +278,7 @@ impl Message {
 
     /// Attempt to decode a prost byte stream into this type. Note that the
     /// stream must be encoded using the correct protobuf3 protocols.
-    #[deprecated(since="1.0.0", note="please use `TryFrom` instead")]
+    #[deprecated(since = "1.0.0", note = "please use `TryFrom` instead")]
     pub fn from_bytes(input: &[u8]) -> Result<Self, Error> {
         use websocket_message::FspComm;
         let tmp: FspComm = input.try_into()?;
