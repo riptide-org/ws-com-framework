@@ -1,4 +1,7 @@
-#[derive(Debug, Clone, PartialEq, Eq)]
+//! Error handling internally and externally for the ws-com-framework
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Whether the connection should be closed after this error.
 pub enum EndOfConnection {
     /// The connection will now close, please flush buffers
     End,
@@ -25,9 +28,11 @@ impl From<EndOfConnection> for bool {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
+/// Error types, represents both errors recieved from a peer, and internal conversion errors
+/// inside of the framework.
+//TODO: Split this error into two types, external vs internal error
 pub enum Error {
     /* Communication/parsing failures inside of ws com */
-
     /// Unable to decode recieved message
     ByteDecodeError(String),
 
@@ -45,7 +50,6 @@ pub enum Error {
     CloseFailure(String),
 
     /* Following errors can be send/recieved from a client */
-
     /// Requested file was unable to be uploaded
     FailedFileUpload(Option<String>, EndOfConnection),
 

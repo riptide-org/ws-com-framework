@@ -16,14 +16,19 @@ mod websocket;
 //////// Traits ////////
 
 /// A trait indicating this is a valid tx stream, and therefore will implement the required methods.
+#[doc(hidden)]
 #[async_trait]
 pub trait TxStream {
+    /// send a message doesn this stream
     async fn __transmit(&mut self, m: Message) -> Result<(), Error>;
+    /// close this transmission stream
     async fn __close(self) -> Result<(), Error>;
 }
 
 /// A trait indicating this is a valid rx stream, and therefore will implement the required methods.
+#[doc(hidden)]
 #[async_trait]
 pub trait RxStream {
+    /// attempt to recieve a message from this stream
     async fn __collect(&mut self) -> Option<Result<Message, Error>>;
 }

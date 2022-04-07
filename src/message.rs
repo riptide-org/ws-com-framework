@@ -1,3 +1,7 @@
+//! Messages handles provides the Message type.
+//!
+//! Internally it also provides conversions between the Message type to/from bytes.
+
 use crate::error::Error;
 
 /*
@@ -6,13 +10,13 @@ anyways, so I'd rather just have a single heap allocation than migrating them to
 stack afterwards. If there is a better way to do this I'm all ears.
 */
 
-//4 bytes representing file id
+/// 4 bytes representing file id
 pub type FileId = u32;
 
-//8 bytes representing a server public id
+/// 8 bytes representing a server public id
 pub type PublicId = u64;
 
-//32 byte authentication key
+/// 32 byte authentication key
 pub type Passcode = Vec<u8>;
 
 /// A macro for converting a provided type into bytes for sending over a stream
@@ -28,6 +32,11 @@ macro_rules! into_bytes {
     }};
 }
 
+/// `websocket_message` segregates the internal message type used by protobuf3
+#[allow(
+    missing_docs,
+    missing_copy_implementations
+)]
 pub mod websocket_message {
     use self::fsp_comm::{Auth, AuthReq, Error as CommError, Metadata, UploadTo};
     use super::Message as ExternalMessage;
@@ -139,47 +148,41 @@ pub mod websocket_message {
                     };
 
                     match err {
-                        crate::Error::FailedFileUpload(reason, connection_end) |
-                        crate::Error::FileDoesntExist(reason, connection_end) |
-                        crate::Error::InvalidSession(reason, connection_end) => Ok(CommError {
+                        crate::Error::FailedFileUpload(reason, connection_end)
+                        | crate::Error::FileDoesntExist(reason, connection_end)
+                        | crate::Error::InvalidSession(reason, connection_end) => Ok(CommError {
                             r#type,
                             connection_end: connection_end.into(),
                             reason,
-                        }.into()),
+                        }
+                        .into()),
                         e => Ok(CommError {
                             r#type: 0,
                             connection_end: false,
                             reason: Some(e.to_string()),
-                        }.into()),
+                        }
+                        .into()),
                     }
-                },
-                ExternalMessage::UploadTo(file_id, upload_url) => {
-                    Ok(UploadTo {
-                        file_id: file_id,
-                        upload_url,
-                    }
-                    .into())
-                },
-                ExternalMessage::Metadata(file_id, upload_url) => {
-                    Ok(Metadata {
-                        file_id: file_id,
-                        upload_url,
-                    }
-                    .into())
-                },
-                ExternalMessage::AuthReq(public_id) => {
-                    Ok(AuthReq {
-                        public_id: public_id,
-                    }
-                    .into())
-                },
-                ExternalMessage::AuthRes(public_id, passcode) => {
-                    Ok(Auth {
-                        public_id: public_id,
-                        passcode: passcode,
-                    }
-                    .into())
-                },
+                }
+                ExternalMessage::UploadTo(file_id, upload_url) => Ok(UploadTo {
+                    file_id: file_id,
+                    upload_url,
+                }
+                .into()),
+                ExternalMessage::Metadata(file_id, upload_url) => Ok(Metadata {
+                    file_id: file_id,
+                    upload_url,
+                }
+                .into()),
+                ExternalMessage::AuthReq(public_id) => Ok(AuthReq {
+                    public_id: public_id,
+                }
+                .into()),
+                ExternalMessage::AuthRes(public_id, passcode) => Ok(Auth {
+                    public_id: public_id,
+                    passcode: passcode,
+                }
+                .into()),
                 ExternalMessage::Close => todo!(),
             }
         }
@@ -195,29 +198,43 @@ pub mod websocket_message {
                     fsp_comm::Type::Error => {
                         let tmp: CommError = value.value.try_into()?;
                         match tmp.r#type {
-                            0 => Ok(Self::Error(crate::error::Error::Unknown(tmp.reason, tmp.connection_end.into()))),
-                            1 => Ok(Self::Error(crate::error::Error::FailedFileUpload(tmp.reason, tmp.connection_end.into()))),
-                            2 => Ok(Self::Error(crate::error::Error::FileDoesntExist(tmp.reason, tmp.connection_end.into()))),
-                            3 => Ok(Self::Error(crate::error::Error::InvalidSession(tmp.reason, tmp.connection_end.into()))),
-                            _ => Err(super::Error::ByteEncodeError(String::from("invalid error type recieved"))),
+                            0 => Ok(Self::Error(crate::error::Error::Unknown(
+                                tmp.reason,
+                                tmp.connection_end.into(),
+                            ))),
+                            1 => Ok(Self::Error(crate::error::Error::FailedFileUpload(
+                                tmp.reason,
+                                tmp.connection_end.into(),
+                            ))),
+                            2 => Ok(Self::Error(crate::error::Error::FileDoesntExist(
+                                tmp.reason,
+                                tmp.connection_end.into(),
+                            ))),
+                            3 => Ok(Self::Error(crate::error::Error::InvalidSession(
+                                tmp.reason,
+                                tmp.connection_end.into(),
+                            ))),
+                            _ => Err(super::Error::ByteEncodeError(String::from(
+                                "invalid error type recieved",
+                            ))),
                         }
-                    },
+                    }
                     fsp_comm::Type::UploadTo => {
                         let tmp: UploadTo = value.value.try_into()?;
                         Ok(ExternalMessage::UploadTo(tmp.file_id, tmp.upload_url))
-                    },
+                    }
                     fsp_comm::Type::Metadata => {
                         let tmp: Metadata = value.value.try_into()?;
                         Ok(ExternalMessage::Metadata(tmp.file_id, tmp.upload_url))
-                    },
+                    }
                     fsp_comm::Type::Authreq => {
                         let tmp: AuthReq = value.value.try_into()?;
                         Ok(ExternalMessage::AuthReq(tmp.public_id))
-                    },
+                    }
                     fsp_comm::Type::Auth => {
                         let tmp: Auth = value.value.try_into()?;
                         Ok(ExternalMessage::AuthRes(tmp.public_id, tmp.passcode))
-                    },
+                    }
                 }
             } else {
                 Err(super::Error::ByteDecodeError(String::from(
@@ -228,14 +245,27 @@ pub mod websocket_message {
     }
 }
 
+/// The Message type is a piece of data that can be sent between a peer and client
+/// it is designed to be send through a websocket connection, and is converted to
+/// protobuf3 to faciliate this sending.
+/// Recieved messages are converted from binary.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Message {
+    /// Acknowledgement of a previous response
     Ok,
+    /// An error has occured, expect this in response to sending a bad request
     Error(Error),
+    /// Request the peer to upload the provided `FileId` to the provided url
     UploadTo(FileId, String),
+    /// Reuqest the peer to upload the provided `FileId` metadata to the provided
+    /// url
     Metadata(FileId, String),
+    /// Request this peer to authenticate itself using the `PublicId` provided.
     AuthReq(PublicId),
+    /// Response from peer with the `PublicId` it is attempting to authenticate
+    /// and the associated `Passcode` for that `PublidId`.
     AuthRes(PublicId, Passcode),
+    /// The peer has indicated that the connection will close
     Close,
 }
 

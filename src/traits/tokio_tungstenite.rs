@@ -22,7 +22,9 @@ impl TxStream
     }
     #[allow(unused_must_use)]
     async fn __close(mut self) -> Result<(), Error> {
-        self.close().await.map_err(|e| Error::CloseFailure(e.to_string()))
+        self.close()
+            .await
+            .map_err(|e| Error::CloseFailure(e.to_string()))
     }
 }
 
@@ -40,7 +42,7 @@ impl RxStream
             return Some(match f {
                 Ok(msg) => TryFrom::try_from(msg),
                 Err(e) => Err(Error::ReceiveFailure(e.to_string())),
-            })
+            });
         }
         None
     }

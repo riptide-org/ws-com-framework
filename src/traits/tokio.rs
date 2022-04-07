@@ -8,8 +8,7 @@ use async_trait::async_trait;
 #[async_trait]
 impl TxStream for tokio::sync::mpsc::UnboundedSender<Message> {
     async fn __transmit(&mut self, m: Message) -> Result<(), Error> {
-        self.send(m)
-            .map_err(|e| Error::SendFailure(e.to_string()))
+        self.send(m).map_err(|e| Error::SendFailure(e.to_string()))
     }
 
     async fn __close(self) -> Result<(), Error> {
@@ -23,7 +22,7 @@ impl TxStream for tokio::sync::mpsc::UnboundedSender<Message> {
 impl RxStream for tokio::sync::mpsc::UnboundedReceiver<Message> {
     async fn __collect(&mut self) -> Option<Result<Message, Error>> {
         match self.recv().await {
-            Some(t) => Some(Ok(t.into())),
+            Some(t) => Some(Ok(t)),
             None => None,
         }
     }

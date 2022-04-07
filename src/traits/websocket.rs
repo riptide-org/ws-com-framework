@@ -1,6 +1,6 @@
 //! Implmenation for websockets split streams
 
-use crate::error::{Error};
+use crate::error::Error;
 use crate::message::Message;
 use crate::traits::{RxStream, TxStream};
 use async_trait::async_trait;
@@ -15,7 +15,8 @@ impl TxStream for websocket::sender::Writer<std::net::TcpStream> {
 
     #[allow(unused_must_use)]
     async fn __close(self) -> Result<(), Error> {
-        self.shutdown_all().map_err(|e| Error::CloseFailure(e.to_string()))
+        self.shutdown_all()
+            .map_err(|e| Error::CloseFailure(e.to_string()))
     }
 }
 
@@ -44,6 +45,6 @@ impl TryFrom<websocket::OwnedMessage> for Message {
             websocket::OwnedMessage::Binary(ref b) => Message::from_bytes(b),
             websocket::OwnedMessage::Close(_) => Ok(Message::Close), //XXX: Parse close reason?
             t => panic!("type not implemented for websocket parsing: {:?}", t),
-        }
+        };
     }
 }

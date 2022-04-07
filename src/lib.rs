@@ -41,20 +41,31 @@
 //! }
 //! ```
 
+#![deny(
+    missing_docs,
+    missing_debug_implementations,
+    missing_copy_implementations,
+    trivial_casts,
+    trivial_numeric_casts,
+    unsafe_code,
+    unstable_features,
+    unused_import_braces,
+    unused_qualifications
+)]
+
 #[cfg(feature = "client")]
 mod client;
+pub mod error;
+pub mod message;
 #[cfg(feature = "server")]
 mod server;
 mod traits;
-pub mod error;
-pub mod message;
 
-pub use traits::{ RxStream, TxStream };
-
+pub use traits::{RxStream, TxStream};
 
 //Re-export relevant types
 pub use error::Error;
-pub use message::{FileId, PublicId, Passcode, Message};
+pub use message::{FileId, Message, Passcode, PublicId};
 
 //TODO implement feature flags for different traits. I.e. websockets, tungesnite, websockets, etc.
 

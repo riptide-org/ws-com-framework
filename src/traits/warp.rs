@@ -17,7 +17,9 @@ impl TxStream for futures::stream::SplitSink<warp::ws::WebSocket, warp::ws::Mess
     }
     #[allow(unused_must_use)]
     async fn __close(mut self) -> Result<(), Error> {
-        self.close().await.map_err(|e| Error::CloseFailure(e.to_string()))
+        self.close()
+            .await
+            .map_err(|e| Error::CloseFailure(e.to_string()))
     }
 }
 
@@ -43,10 +45,10 @@ impl TryFrom<warp::ws::Message> for Message {
     type Error = Error;
     fn try_from(value: warp::ws::Message) -> Result<Self, Error> {
         if value.is_binary() {
-            return Ok(Self::from_bytes(value.as_bytes())?)
+            return Self::from_bytes(value.as_bytes());
         }
         if value.is_close() {
-            return Ok(Self::Close)
+            return Ok(Self::Close);
         }
         todo!(); //TODO
     }
