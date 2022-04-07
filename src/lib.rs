@@ -22,7 +22,7 @@
 //!     //Create a new sender over the sending stream of the websocket.
 //!     let mut s = Sender::new(tx);
 //!
-//!     let message = "Hello, World!".to_owned();
+//!     let message: Message = Message::AuthReq(56);
 //!
 //!     //Same syntax, except message is now of our custom type, in this way we can limit what can be
 //!     //sent down the websockets - which should help to reduce errors.
@@ -36,7 +36,7 @@
 //!         //Very similar syntax to current solution
 //!         //except that v is a custom type which we can then
 //!         //easily match over
-//!         assert_eq!(Message::Message("Hello, World!".into()), v.unwrap());
+//!         assert_eq!(Message::AuthReq(56), v.unwrap());
 //!     }
 //! }
 //! ```
@@ -83,7 +83,7 @@ where
 
     /// Close the sending side of this websocket connection.
     pub async fn close(self) -> Result<(), Error> {
-        self.tx.__close()
+        self.tx.__close().await
     }
 
     ///Acquire the underlying tx stream, this consumes the sender wrapper.

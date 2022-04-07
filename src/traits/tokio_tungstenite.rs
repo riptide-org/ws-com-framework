@@ -18,11 +18,11 @@ impl TxStream
     async fn __transmit(&mut self, m: Message) -> Result<(), Error> {
         self.send(m.try_into()?)
             .await
-            .map_err(|e| Error::SendFailure(Box::new(e)))
+            .map_err(|e| Error::SendFailure(e.to_string()))
     }
     #[allow(unused_must_use)]
-    async fn __close(mut self) {
-        self.close().await; //TODO refactor to return result
+    async fn __close(mut self) -> Result<(), Error> {
+        self.close().await.map_err(|e| Error::CloseFailure(e.to_string()))
     }
 }
 
@@ -39,7 +39,7 @@ impl RxStream
             //Convert type into intermediary
             return Some(match f {
                 Ok(msg) => TryFrom::try_from(msg),
-                Err(e) => Err(Error::ReceiveFailure(Box::new(e))),
+                Err(e) => Err(Error::ReceiveFailure(e.to_string())),
             })
         }
         None

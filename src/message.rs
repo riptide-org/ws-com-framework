@@ -130,9 +130,28 @@ pub mod websocket_message {
                     r#type: 1,
                     value: Vec::with_capacity(0),
                 }),
-                ExternalMessage::Error(reason) => {
-                    todo!()
-                    // Ok(CommError { reason }.into())
+                ExternalMessage::Error(err) => {
+                    let r#type = match err {
+                        crate::Error::FailedFileUpload(_, _) => 1,
+                        crate::Error::FileDoesntExist(_, _) => 2,
+                        crate::Error::InvalidSession(_, _) => 3,
+                        _ => 0,
+                    };
+
+                    match err {
+                        crate::Error::FailedFileUpload(reason, connection_end) |
+                        crate::Error::FileDoesntExist(reason, connection_end) |
+                        crate::Error::InvalidSession(reason, connection_end) => Ok(CommError {
+                            r#type,
+                            connection_end: connection_end.into(),
+                            reason,
+                        }.into()),
+                        e => Ok(CommError {
+                            r#type: 0,
+                            connection_end: false,
+                            reason: Some(e.to_string()),
+                        }.into()),
+                    }
                 },
                 ExternalMessage::UploadTo(file_id, upload_url) => {
                     Ok(UploadTo {
@@ -171,30 +190,35 @@ pub mod websocket_message {
 
         fn try_from(value: FspComm) -> Result<Self, super::Error> {
             if let Some(ty) = fsp_comm::Type::from_i32(value.r#type) {
-                let res = match ty {
-                    fsp_comm::Type::Ok => ExternalMessage::Ok,
+                match ty {
+                    fsp_comm::Type::Ok => Ok(ExternalMessage::Ok),
                     fsp_comm::Type::Error => {
                         let tmp: CommError = value.value.try_into()?;
-                        ExternalMessage::Error(tmp.reason)
+                        match tmp.r#type {
+                            0 => Ok(Self::Error(crate::error::Error::Unknown(tmp.reason, tmp.connection_end.into()))),
+                            1 => Ok(Self::Error(crate::error::Error::FailedFileUpload(tmp.reason, tmp.connection_end.into()))),
+                            2 => Ok(Self::Error(crate::error::Error::FileDoesntExist(tmp.reason, tmp.connection_end.into()))),
+                            3 => Ok(Self::Error(crate::error::Error::InvalidSession(tmp.reason, tmp.connection_end.into()))),
+                            _ => Err(super::Error::ByteEncodeError(String::from("invalid error type recieved"))),
+                        }
                     },
                     fsp_comm::Type::UploadTo => {
                         let tmp: UploadTo = value.value.try_into()?;
-                        ExternalMessage::UploadTo(tmp.file_id, tmp.upload_url)
+                        Ok(ExternalMessage::UploadTo(tmp.file_id, tmp.upload_url))
                     },
                     fsp_comm::Type::Metadata => {
                         let tmp: Metadata = value.value.try_into()?;
-                        ExternalMessage::Metadata(tmp.file_id, tmp.upload_url)
+                        Ok(ExternalMessage::Metadata(tmp.file_id, tmp.upload_url))
                     },
                     fsp_comm::Type::Authreq => {
                         let tmp: AuthReq = value.value.try_into()?;
-                        ExternalMessage::AuthReq(tmp.public_id)
+                        Ok(ExternalMessage::AuthReq(tmp.public_id))
                     },
                     fsp_comm::Type::Auth => {
                         let tmp: Auth = value.value.try_into()?;
-                        ExternalMessage::AuthRes(tmp.public_id, tmp.passcode)
+                        Ok(ExternalMessage::AuthRes(tmp.public_id, tmp.passcode))
                     },
-                };
-                Ok(res)
+                }
             } else {
                 Err(super::Error::ByteDecodeError(String::from(
                     "unrecognised i32 variant",
@@ -204,10 +228,10 @@ pub mod websocket_message {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Message {
     Ok,
-    Error(Option<String>),
+    Error(Error),
     UploadTo(FileId, String),
     Metadata(FileId, String),
     AuthReq(PublicId),

@@ -6,7 +6,25 @@ pub enum EndOfConnection {
     Continue,
 }
 
-#[derive(Debug)]
+impl From<bool> for EndOfConnection {
+    fn from(b: bool) -> Self {
+        match b {
+            true => Self::End,
+            false => Self::Continue,
+        }
+    }
+}
+
+impl From<EndOfConnection> for bool {
+    fn from(c: EndOfConnection) -> Self {
+        match c {
+            EndOfConnection::End => true,
+            EndOfConnection::Continue => false,
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Error {
     /* Communication/parsing failures inside of ws com */
 
@@ -17,26 +35,29 @@ pub enum Error {
     ByteEncodeError(String),
 
     /// Unable to send a message
-    SendFailure(Box<(dyn std::error::Error + 'static + Send + Sync)>),
+    SendFailure(String),
 
     /// Unable to recieve a message
-    ReceiveFailure(Box<(dyn std::error::Error + 'static + Send + Sync)>),
+    ReceiveFailure(String),
 
+    /// Unable to close socket
+    //XXX: could this be made into an std::io::error??
+    CloseFailure(String),
 
     /* Following errors can be send/recieved from a client */
 
     /// Requested file was unable to be uploaded
-    FailedFileUpload((Option<String>, EndOfConnection)),
+    FailedFileUpload(Option<String>, EndOfConnection),
 
     /// Requested file does not exist
-    FileDoesntExist((Option<String>, EndOfConnection)),
+    FileDoesntExist(Option<String>, EndOfConnection),
 
     /// You should have authenticated before
-    InvalidSession((Option<String>, EndOfConnection)),
+    InvalidSession(Option<String>, EndOfConnection),
 
     /// The client has sent a unique error that does not
     /// have a predetermined type. They should have set the Option<String> value.
-    Unknown((Option<String>, EndOfConnection)),
+    Unknown(Option<String>, EndOfConnection),
 }
 
 impl From<prost::DecodeError> for Error {
@@ -50,12 +71,14 @@ impl std::fmt::Display for Error {
         match self {
             Error::ByteDecodeError(e) => write!(f, "failed to decode bytes as valid message {}", e),
             Error::ByteEncodeError(e) => write!(f, "failed to encode bytes as valid message {}", e),
-            Error::FailedFileUpload(_) => todo!(),
-            Error::FileDoesntExist(_) => todo!(),
-            Error::InvalidSession(_) => todo!(),
-            Error::Unknown(_) => todo!(),
+            Error::Unknown(_, _) => todo!(),
             Error::SendFailure(_) => todo!(),
             Error::ReceiveFailure(_) => todo!(),
+            Error::CloseFailure(_) => todo!(),
+
+            Error::FailedFileUpload(_, _) => todo!(),
+            Error::FileDoesntExist(_, _) => todo!(),
+            Error::InvalidSession(_, _) => todo!(),
         }
     }
 }

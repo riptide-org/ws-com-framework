@@ -10,12 +10,12 @@ impl TxStream for websocket::sender::Writer<std::net::TcpStream> {
     async fn __transmit(&mut self, m: Message) -> Result<(), Error> {
         let m: websocket::OwnedMessage = m.try_into()?;
         self.send_message(&m)
-            .map_err(|e| Error::SendFailure(Box::new(e)))
+            .map_err(|e| Error::SendFailure(e.to_string()))
     }
 
     #[allow(unused_must_use)]
-    async fn __close(self) {
-        self.shutdown_all();
+    async fn __close(self) -> Result<(), Error> {
+        self.shutdown_all().map_err(|e| Error::CloseFailure(e.to_string()))
     }
 }
 
@@ -25,7 +25,7 @@ impl RxStream for websocket::receiver::Reader<std::net::TcpStream> {
         match self.recv_message() {
             Ok(f) => Some(f.try_into()),
             Err(websocket::result::WebSocketError::NoDataAvailable) => None,
-            Err(e) => Some(Err(Error::ReceiveFailure(Box::new(e)))),
+            Err(e) => Some(Err(Error::ReceiveFailure(e.to_string()))),
         }
     }
 }
@@ -42,7 +42,7 @@ impl TryFrom<websocket::OwnedMessage> for Message {
     fn try_from(value: websocket::OwnedMessage) -> Result<Self, Error> {
         return match value {
             websocket::OwnedMessage::Binary(ref b) => Message::from_bytes(b),
-            websocket::OwnedMessage::Close(r) => Ok(Message::Close), //XXX: Parse close reason?
+            websocket::OwnedMessage::Close(_) => Ok(Message::Close), //XXX: Parse close reason?
             t => panic!("type not implemented for websocket parsing: {:?}", t),
         }
     }

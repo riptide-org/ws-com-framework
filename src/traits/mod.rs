@@ -19,12 +19,11 @@ mod websocket;
 #[async_trait]
 pub trait TxStream {
     async fn __transmit(&mut self, m: Message) -> Result<(), Error>;
-    async fn __close(self);
+    async fn __close(self) -> Result<(), Error>;
 }
 
 /// A trait indicating this is a valid rx stream, and therefore will implement the required methods.
 #[async_trait]
 pub trait RxStream {
     async fn __collect(&mut self) -> Option<Result<Message, Error>>;
-
 }
