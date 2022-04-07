@@ -33,10 +33,7 @@ macro_rules! into_bytes {
 }
 
 /// `websocket_message` segregates the internal message type used by protobuf3
-#[allow(
-    missing_docs,
-    missing_copy_implementations
-)]
+#[allow(missing_docs, missing_copy_implementations)]
 pub mod websocket_message {
     use self::fsp_comm::{Auth, AuthReq, Error as CommError, Metadata, UploadTo};
     use super::Message as ExternalMessage;
