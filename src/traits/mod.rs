@@ -15,25 +15,20 @@ mod websocket;
 
 //////// Traits ////////
 
-/// A message type which can be sent.
-pub trait Sendable {}
-
-/// A message type which can be recieved.
-pub trait Receivable {}
-
 /// A trait indicating this is a valid tx stream, and therefore will implement the required methods.
+#[doc(hidden)]
 #[async_trait]
 pub trait TxStream {
-    async fn __transmit<T>(&mut self, m: T) -> Result<(), Error>
-    where
-        T: Into<Message> + Send;
-    async fn __close(self);
+    /// send a message doesn this stream
+    async fn __transmit(&mut self, m: Message) -> Result<(), Error>;
+    /// close this transmission stream
+    async fn __close(self) -> Result<(), Error>;
 }
 
 /// A trait indicating this is a valid rx stream, and therefore will implement the required methods.
+#[doc(hidden)]
 #[async_trait]
 pub trait RxStream {
-    async fn __collect<T>(&mut self) -> Option<Result<T, Error>>
-    where
-        T: From<Message> + Send;
+    /// attempt to recieve a message from this stream
+    async fn __collect(&mut self) -> Option<Result<Message, Error>>;
 }

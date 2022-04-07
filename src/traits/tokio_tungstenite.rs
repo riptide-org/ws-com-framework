@@ -1,6 +1,6 @@
 //! Implementation for tokio-tungstenite
 
-use crate::error::{Error, ErrorLevel, WrappedError};
+use crate::error::Error;
 use crate::message::Message;
 use crate::traits::{RxStream, TxStream};
 use async_trait::async_trait;
@@ -15,18 +15,16 @@ impl TxStream
         tokio_tungstenite::tungstenite::Message,
     >
 {
-    async fn __transmit<T>(&mut self, m: T) -> Result<(), Error>
-    where
-        T: Into<Message> + Send,
-    {
-        let m: Message = m.into();
-        self.send(m.into())
+    async fn __transmit(&mut self, m: Message) -> Result<(), Error> {
+        self.send(m.try_into()?)
             .await
-            .map_err(|e| Error::Generic(WrappedError::new(ErrorLevel::High, e.to_string())))
+            .map_err(|e| Error::SendFailure(e.to_string()))
     }
     #[allow(unused_must_use)]
-    async fn __close(mut self) {
-        self.close().await; //TODO refactor to return result
+    async fn __close(mut self) -> Result<(), Error> {
+        self.close()
+            .await
+            .map_err(|e| Error::CloseFailure(e.to_string()))
     }
 }
 
@@ -38,46 +36,54 @@ impl RxStream
         >,
     >
 {
-    async fn __collect<T>(&mut self) -> Option<Result<T, Error>>
-    where
-        T: From<Message> + Send,
-    {
+    async fn __collect(&mut self) -> Option<Result<Message, Error>> {
         if let Some(f) = self.next().await {
             //Convert type into intermediary
-            let f: Result<Message, Error> = f
-                .map(|m| m.into())
-                .map_err(|e| Error::Generic(WrappedError::new(ErrorLevel::High, e.to_string())));
-
-            //Convert our Message type into whatever type this client requires
-            let f: Result<T, Error> = f.map(|m| m.into());
-            return Some(f);
+            return Some(match f {
+                Ok(msg) => TryFrom::try_from(msg),
+                Err(e) => Err(Error::ReceiveFailure(e.to_string())),
+            });
         }
         None
     }
 }
 
-impl From<Message> for tokio_tungstenite::tungstenite::Message {
-    fn from(s: Message) -> Self {
-        let b = bincode::serialize(&s).expect("Serialisation of message failed!"); //Saftey: Static type, tested
-        Self::Binary(b)
+impl TryFrom<Message> for tokio_tungstenite::tungstenite::Message {
+    type Error = Error;
+    fn try_from(s: Message) -> Result<Self, Self::Error> {
+        Ok(Self::Binary(s.into_bytes()?))
     }
 }
 
-impl Into<Message> for tokio_tungstenite::tungstenite::Message {
-    fn into(self) -> Message {
-        return match self {
-            tokio_tungstenite::tungstenite::Message::Binary(b) => {
-                let b = &b;
-                bincode::deserialize(b).unwrap()
-            }
-            tokio_tungstenite::tungstenite::Message::Close(e) => {
-                let e = e.unwrap_or(tokio_tungstenite::tungstenite::protocol::CloseFrame {
-                    reason: "Unknown Reason".into(),
-                    code: tokio_tungstenite::tungstenite::protocol::frame::coding::CloseCode::Abnormal,
-                });
-                Message::Close(e.reason.to_string())
-            }
-            t => panic!("Type not implemented for websocket parsing: {:?}", t),
-        };
+impl TryFrom<tokio_tungstenite::tungstenite::Message> for Message {
+    type Error = Error;
+    fn try_from(s: tokio_tungstenite::tungstenite::Message) -> Result<Self, Error> {
+        match s {
+            tokio_tungstenite::tungstenite::Message::Text(_) => todo!(),
+            tokio_tungstenite::tungstenite::Message::Binary(_) => todo!(),
+            tokio_tungstenite::tungstenite::Message::Ping(_) => todo!(),
+            tokio_tungstenite::tungstenite::Message::Pong(_) => todo!(),
+            tokio_tungstenite::tungstenite::Message::Close(_) => todo!(),
+            tokio_tungstenite::tungstenite::Message::Frame(_) => todo!(),
+        }
     }
 }
+
+// impl Into<Message> for tokio_tungstenite::tungstenite::Message {
+//     fn into(self) -> Message {
+//         return match self {
+//             tokio_tungstenite::tungstenite::Message::Binary(b) => {
+//                 let b = &b;
+//                 bincode::deserialize(b).unwrap()
+//             }
+//             tokio_tungstenite::tungstenite::Message::Close(e) => {
+//                 let e = e.unwrap_or(tokio_tungstenite::tungstenite::protocol::CloseFrame {
+//                     reason: "Unknown Reason".into(),
+//                     code: tokio_tungstenite::tungstenite::protocol::frame::coding::CloseCode::Abnormal,
+//                 });
+//                 Message::Close(e.reason.to_string())
+//             }
+//             t => panic!("Type not implemented for websocket parsing: {:?}", t),
+//         };
+//     }
+// }

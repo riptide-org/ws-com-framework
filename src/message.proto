@@ -1,0 +1,74 @@
+syntax = "proto3";
+package events;
+
+message FspComm {
+    /*
+    * Request for a file or metadata upload to the provided location
+    */
+    message UploadTo {
+        uint32 file_id = 1;
+        string upload_url = 2;
+    }
+
+    /*
+    * Request for a file or metadata upload to the provided location
+    */
+    message Metadata {
+        uint32 file_id = 1;
+        string upload_url = 2;
+    }
+
+    /*
+    * An authentication challenge
+    */
+    message AuthReq {
+        uint64 public_id = 1;
+    }
+
+    /*
+    * An authentication response to an auth challenge, containing the expected public_id
+    * and passcode.
+    */
+    message Auth {
+        uint64 public_id = 1;
+        bytes passcode = 2;
+    }
+
+    /*
+    * An error has occured
+    */
+    message Error {
+        enum ErrorType {
+            /// Other Error, reason should be populated
+            UNKNOWN = 0;
+            /// Previously requested upload failed
+            FILE_FAILED_UPLOAD = 1;
+            /// Requested file does not exist
+            FILE_DOESNT_EXIST = 2;
+            /// You should have authenticated before making this request
+            INVALID_SESSION = 3;
+        }
+        /// The type of error being sent
+        Type type = 1;
+
+        /// Whether the peer should expect to be disconnected after recieving this error
+        /// true = connection closed
+        /// false = connection remains
+        bool connection_end = 2;
+
+        /// An optional reason for the error.
+        optional string reason = 3;
+    }
+
+    enum Type {
+        OK = 0;
+        ERROR = 1;
+        UPLOAD_TO = 2;
+        METADATA = 3;
+        AUTHREQ = 4;
+        AUTH = 5;
+    }
+
+    Type type = 1;
+    bytes value = 2;
+}

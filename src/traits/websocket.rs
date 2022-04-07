@@ -1,73 +1,50 @@
 //! Implmenation for websockets split streams
 
-use crate::error::{Error, ErrorLevel, WrappedError};
+use crate::error::Error;
 use crate::message::Message;
 use crate::traits::{RxStream, TxStream};
 use async_trait::async_trait;
 
 #[async_trait]
 impl TxStream for websocket::sender::Writer<std::net::TcpStream> {
-    async fn __transmit<T>(&mut self, m: T) -> Result<(), Error>
-    where
-        T: Into<Message> + Send,
-    {
-        let m: Message = m.into();
-        let m: websocket::OwnedMessage = m.into();
+    async fn __transmit(&mut self, m: Message) -> Result<(), Error> {
+        let m: websocket::OwnedMessage = m.try_into()?;
         self.send_message(&m)
-            .map_err(|e| Error::Generic(WrappedError::new(ErrorLevel::High, e.to_string())))
+            .map_err(|e| Error::SendFailure(e.to_string()))
     }
 
     #[allow(unused_must_use)]
-    async fn __close(self) {
-        self.shutdown_all();
+    async fn __close(self) -> Result<(), Error> {
+        self.shutdown_all()
+            .map_err(|e| Error::CloseFailure(e.to_string()))
     }
 }
 
 #[async_trait]
 impl RxStream for websocket::receiver::Reader<std::net::TcpStream> {
-    async fn __collect<T>(&mut self) -> Option<Result<T, Error>>
-    where
-        T: From<Message> + Send,
-    {
-        let m: Message = match self.recv_message() {
-            Ok(f) => f.into(),
-            Err(e) => {
-                return match e {
-                    websocket::result::WebSocketError::NoDataAvailable => None,
-                    _ => Some(Err(Error::Generic(WrappedError::new(
-                        ErrorLevel::High,
-                        e.to_string(),
-                    )))),
-                };
-            }
-        };
-
-        return Some(Ok(m.into()));
+    async fn __collect(&mut self) -> Option<Result<Message, Error>> {
+        match self.recv_message() {
+            Ok(f) => Some(f.try_into()),
+            Err(websocket::result::WebSocketError::NoDataAvailable) => None,
+            Err(e) => Some(Err(Error::ReceiveFailure(e.to_string()))),
+        }
     }
 }
 
-impl From<Message> for websocket::OwnedMessage {
-    fn from(s: Message) -> websocket::OwnedMessage {
-        let b = bincode::serialize(&s).expect("Serialisation of message failed!"); //Saftey: Static type, tested
-        Self::Binary(b)
+impl TryFrom<Message> for websocket::OwnedMessage {
+    type Error = Error;
+    fn try_from(s: Message) -> Result<websocket::OwnedMessage, Error> {
+        Ok(Self::Binary(s.into_bytes()?))
     }
 }
 
-impl Into<Message> for websocket::OwnedMessage {
-    fn into(self) -> Message {
-        return match self {
-            websocket::OwnedMessage::Binary(b) => {
-                let b = &b;
-                bincode::deserialize(b).unwrap()
-            }
-            websocket::OwnedMessage::Close(e) => {
-                let e = e.unwrap_or(websocket::CloseData {
-                    reason: "Unknown Reason".into(),
-                    status_code: 400,
-                });
-                Message::Close(e.reason)
-            }
-            t => panic!("Type not implemented for websocket parsing: {:?}", t),
+impl TryFrom<websocket::OwnedMessage> for Message {
+    type Error = Error;
+    fn try_from(value: websocket::OwnedMessage) -> Result<Self, Error> {
+        return match value {
+            websocket::OwnedMessage::Binary(ref b) => Message::from_bytes(b),
+            websocket::OwnedMessage::Close(_) => Ok(Message::Close), //XXX: Parse close reason?
+            t => panic!("type not implemented for websocket parsing: {:?}", t),
         };
     }
 }
