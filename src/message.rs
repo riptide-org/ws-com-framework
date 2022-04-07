@@ -2,7 +2,7 @@
 //!
 //! Internally it also provides conversions between the Message type to/from bytes.
 
-use crate::error::Error;
+use crate::error::{EndOfConnection, Error, ErrorKind};
 
 /*
 Note: These types could be stack allocated, but the recving buff heap allocates them
@@ -136,31 +136,12 @@ pub mod websocket_message {
                     r#type: 1,
                     value: Vec::with_capacity(0),
                 }),
-                ExternalMessage::Error(err) => {
-                    let r#type = match err {
-                        crate::Error::FailedFileUpload(_, _) => 1,
-                        crate::Error::FileDoesntExist(_, _) => 2,
-                        crate::Error::InvalidSession(_, _) => 3,
-                        _ => 0,
-                    };
-
-                    match err {
-                        crate::Error::FailedFileUpload(reason, connection_end)
-                        | crate::Error::FileDoesntExist(reason, connection_end)
-                        | crate::Error::InvalidSession(reason, connection_end) => Ok(CommError {
-                            r#type,
-                            connection_end: connection_end.into(),
-                            reason,
-                        }
-                        .into()),
-                        e => Ok(CommError {
-                            r#type: 0,
-                            connection_end: false,
-                            reason: Some(e.to_string()),
-                        }
-                        .into()),
-                    }
+                ExternalMessage::Error(reason, connection_end, error_kind) => Ok(CommError {
+                    r#type: error_kind as i32,
+                    connection_end: connection_end.into(),
+                    reason,
                 }
+                .into()),
                 ExternalMessage::UploadTo(file_id, upload_url) => Ok(UploadTo {
                     file_id: file_id,
                     upload_url,
@@ -187,34 +168,17 @@ pub mod websocket_message {
 
     impl TryFrom<FspComm> for ExternalMessage {
         type Error = super::Error;
-
         fn try_from(value: FspComm) -> Result<Self, super::Error> {
             if let Some(ty) = fsp_comm::Type::from_i32(value.r#type) {
                 match ty {
                     fsp_comm::Type::Ok => Ok(ExternalMessage::Ok),
                     fsp_comm::Type::Error => {
                         let tmp: CommError = value.value.try_into()?;
-                        match tmp.r#type {
-                            0 => Ok(Self::Error(crate::error::Error::Unknown(
-                                tmp.reason,
-                                tmp.connection_end.into(),
-                            ))),
-                            1 => Ok(Self::Error(crate::error::Error::FailedFileUpload(
-                                tmp.reason,
-                                tmp.connection_end.into(),
-                            ))),
-                            2 => Ok(Self::Error(crate::error::Error::FileDoesntExist(
-                                tmp.reason,
-                                tmp.connection_end.into(),
-                            ))),
-                            3 => Ok(Self::Error(crate::error::Error::InvalidSession(
-                                tmp.reason,
-                                tmp.connection_end.into(),
-                            ))),
-                            _ => Err(super::Error::ByteEncodeError(String::from(
-                                "invalid error type recieved",
-                            ))),
-                        }
+                        Ok(ExternalMessage::Error(
+                            tmp.reason,
+                            tmp.connection_end.into(),
+                            tmp.r#type.into(),
+                        ))
                     }
                     fsp_comm::Type::UploadTo => {
                         let tmp: UploadTo = value.value.try_into()?;
@@ -251,7 +215,7 @@ pub enum Message {
     /// Acknowledgement of a previous response
     Ok,
     /// An error has occured, expect this in response to sending a bad request
-    Error(Error),
+    Error(Option<String>, EndOfConnection, ErrorKind),
     /// Request the peer to upload the provided `FileId` to the provided url
     UploadTo(FileId, String),
     /// Reuqest the peer to upload the provided `FileId` metadata to the provided

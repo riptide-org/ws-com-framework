@@ -27,41 +27,40 @@ impl From<EndOfConnection> for bool {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Represents the kind of error recieved from a peer
+pub enum ErrorKind {
+    /// The client has sent a unique error that does not
+    /// have a predetermined type. They should have set the Option<String> value.
+    Unknown = 0,
+    /// Requested file was unable to be uploaded
+    FailedFileUpload = 1,
+    /// Requested file does not exist
+    FileDoesntExist = 2,
+    /// You should have authenticated before
+    InvalidSession = 3,
+}
+
+impl From<i32> for ErrorKind {
+    fn from(value: i32) -> Self {
+        match value {
+            1 => Self::FailedFileUpload,
+            2 => Self::FileDoesntExist,
+            3 => Self::InvalidSession,
+            _ => Self::Unknown,
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, Eq, Clone)]
 /// Error types, represents both errors recieved from a peer, and internal conversion errors
 /// inside of the framework.
-//TODO: Split this error into two types, external vs internal error
 pub enum Error {
-    /* Communication/parsing failures inside of ws com */
     /// Unable to decode recieved message
     ByteDecodeError(String),
 
     /// Unable to encode provided message to send
     ByteEncodeError(String),
-
-    /// Unable to send a message
-    SendFailure(String),
-
-    /// Unable to recieve a message
-    ReceiveFailure(String),
-
-    /// Unable to close socket
-    //XXX: could this be made into an std::io::error??
-    CloseFailure(String),
-
-    /* Following errors can be send/recieved from a client */
-    /// Requested file was unable to be uploaded
-    FailedFileUpload(Option<String>, EndOfConnection),
-
-    /// Requested file does not exist
-    FileDoesntExist(Option<String>, EndOfConnection),
-
-    /// You should have authenticated before
-    InvalidSession(Option<String>, EndOfConnection),
-
-    /// The client has sent a unique error that does not
-    /// have a predetermined type. They should have set the Option<String> value.
-    Unknown(Option<String>, EndOfConnection),
 }
 
 impl From<prost::DecodeError> for Error {
@@ -75,14 +74,6 @@ impl std::fmt::Display for Error {
         match self {
             Error::ByteDecodeError(e) => write!(f, "failed to decode bytes as valid message {}", e),
             Error::ByteEncodeError(e) => write!(f, "failed to encode bytes as valid message {}", e),
-            Error::Unknown(_, _) => todo!(),
-            Error::SendFailure(_) => todo!(),
-            Error::ReceiveFailure(_) => todo!(),
-            Error::CloseFailure(_) => todo!(),
-
-            Error::FailedFileUpload(_, _) => todo!(),
-            Error::FileDoesntExist(_, _) => todo!(),
-            Error::InvalidSession(_, _) => todo!(),
         }
     }
 }
@@ -90,15 +81,5 @@ impl std::fmt::Display for Error {
 impl std::error::Error for Error {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         None
-
-        // match *self {
-        //     Error::ByteDecodeError(_) => todo!(),
-        //     Error::ByteEncodeError(_) => todo!(),
-        //     // Error::SendFailure(snd_fl) => Some(snd_fl),
-        //     Error::FailedFileUpload(_) => todo!(),
-        //     Error::FileDoesntExist(_) => todo!(),
-        //     Error::InvalidSession(_) => todo!(),
-        //     Error::Unknown(_) => todo!(),
-        // }
     }
 }
