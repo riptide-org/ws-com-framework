@@ -79,7 +79,7 @@ pub mod websocket_message {
     impl From<UploadTo> for FspComm {
         fn from(itm: UploadTo) -> Self {
             Self {
-                r#type: 3,
+                r#type: 2,
                 value: into_bytes!(itm),
             }
         }
@@ -88,7 +88,7 @@ pub mod websocket_message {
     impl From<Metadata> for FspComm {
         fn from(itm: Metadata) -> Self {
             Self {
-                r#type: 4,
+                r#type: 3,
                 value: into_bytes!(itm),
             }
         }
@@ -97,7 +97,7 @@ pub mod websocket_message {
     impl From<AuthReq> for FspComm {
         fn from(itm: AuthReq) -> Self {
             Self {
-                r#type: 5,
+                r#type: 4,
                 value: into_bytes!(itm),
             }
         }
@@ -106,7 +106,7 @@ pub mod websocket_message {
     impl From<Auth> for FspComm {
         fn from(itm: Auth) -> Self {
             Self {
-                r#type: 6,
+                r#type: 5,
                 value: into_bytes!(itm),
             }
         }
