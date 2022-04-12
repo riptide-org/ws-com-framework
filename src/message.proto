@@ -13,9 +13,26 @@ message FspComm {
     /*
     * Request for a file or metadata upload to the provided location
     */
-    message Metadata {
+    message MetadataReq {
         uint32 file_id = 1;
-        string upload_url = 2;
+    }
+
+    /*
+    * Metadata response from a node to the requester
+    */
+    message MetadataRes {
+        // The unique file_id of this file
+        uint32 file_id = 1;
+        // When this file share expires (seconds since epoch)
+        uint64 exp = 2;
+        // When this file was created (seconds since epoch)
+        uint64 crt = 3;
+        // The size of this file in bytes
+        uint64 file_size = 4;
+        // The name of the user sharing the file
+        string username = 5;
+        // the name of the file being share
+        string file_name = 6;
     }
 
     /*
@@ -64,9 +81,10 @@ message FspComm {
         OK = 0;
         ERROR = 1;
         UPLOAD_TO = 2;
-        METADATA = 3;
-        AUTHREQ = 4;
-        AUTH = 5;
+        METADATA_REQ = 3;
+        METADATA_RES = 4;
+        AUTHREQ = 5;
+        AUTH = 6;
     }
 
     Type type = 1;

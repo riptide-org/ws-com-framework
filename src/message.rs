@@ -35,8 +35,9 @@ macro_rules! into_bytes {
 /// `websocket_message` segregates the internal message type used by protobuf3
 #[allow(missing_docs, missing_copy_implementations)]
 pub mod websocket_message {
-    use self::fsp_comm::{Auth, AuthReq, Error as CommError, Metadata, UploadTo};
+    use self::fsp_comm::{Auth, AuthReq, Error as CommError, MetadataReq, MetadataRes, UploadTo};
     use super::Message as ExternalMessage;
+    use super::ShareMetadata;
     use prost::Message;
 
     include!(concat!(env!("OUT_DIR"), "/events.rs"));
@@ -48,7 +49,14 @@ pub mod websocket_message {
         }
     }
 
-    impl TryFrom<Vec<u8>> for Metadata {
+    impl TryFrom<Vec<u8>> for MetadataReq {
+        type Error = super::Error;
+        fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
+            Ok(Self::decode(&value[..])?)
+        }
+    }
+
+    impl TryFrom<Vec<u8>> for MetadataRes {
         type Error = super::Error;
         fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
             Ok(Self::decode(&value[..])?)
@@ -76,6 +84,15 @@ pub mod websocket_message {
         }
     }
 
+    impl From<CommError> for FspComm {
+        fn from(itm: CommError) -> Self {
+            Self {
+                r#type: 1,
+                value: into_bytes!(itm),
+            }
+        }
+    }
+
     impl From<UploadTo> for FspComm {
         fn from(itm: UploadTo) -> Self {
             Self {
@@ -85,10 +102,19 @@ pub mod websocket_message {
         }
     }
 
-    impl From<Metadata> for FspComm {
-        fn from(itm: Metadata) -> Self {
+    impl From<MetadataReq> for FspComm {
+        fn from(itm: MetadataReq) -> Self {
             Self {
                 r#type: 3,
+                value: into_bytes!(itm),
+            }
+        }
+    }
+
+    impl From<MetadataRes> for FspComm {
+        fn from(itm: MetadataRes) -> Self {
+            Self {
+                r#type: 4,
                 value: into_bytes!(itm),
             }
         }
@@ -97,7 +123,7 @@ pub mod websocket_message {
     impl From<AuthReq> for FspComm {
         fn from(itm: AuthReq) -> Self {
             Self {
-                r#type: 4,
+                r#type: 5,
                 value: into_bytes!(itm),
             }
         }
@@ -106,16 +132,7 @@ pub mod websocket_message {
     impl From<Auth> for FspComm {
         fn from(itm: Auth) -> Self {
             Self {
-                r#type: 5,
-                value: into_bytes!(itm),
-            }
-        }
-    }
-
-    impl From<CommError> for FspComm {
-        fn from(itm: CommError) -> Self {
-            Self {
-                r#type: 1,
+                r#type: 6,
                 value: into_bytes!(itm),
             }
         }
@@ -147,11 +164,18 @@ pub mod websocket_message {
                     upload_url,
                 }
                 .into()),
-                ExternalMessage::Metadata(file_id, upload_url) => Ok(Metadata {
-                    file_id: file_id,
-                    upload_url,
+                ExternalMessage::MetadataReq(file_id) => Ok(MetadataReq {
+                    file_id,
                 }
                 .into()),
+                ExternalMessage::MetadataRes(metadata) => Ok(MetadataRes {
+                    file_id: metadata.file_id,
+                    exp: metadata.exp,
+                    crt: metadata.crt,
+                    file_size: metadata.file_size,
+                    username: metadata.username,
+                    file_name: metadata.file_name,
+                }.into()),
                 ExternalMessage::AuthReq(public_id) => Ok(AuthReq {
                     public_id: public_id,
                 }
@@ -184,9 +208,20 @@ pub mod websocket_message {
                         let tmp: UploadTo = value.value.try_into()?;
                         Ok(ExternalMessage::UploadTo(tmp.file_id, tmp.upload_url))
                     }
-                    fsp_comm::Type::Metadata => {
-                        let tmp: Metadata = value.value.try_into()?;
-                        Ok(ExternalMessage::Metadata(tmp.file_id, tmp.upload_url))
+                    fsp_comm::Type::MetadataReq => {
+                        let tmp: MetadataReq = value.value.try_into()?;
+                        Ok(ExternalMessage::MetadataReq(tmp.file_id))
+                    }
+                    fsp_comm::Type::MetadataRes => {
+                        let tmp: MetadataRes = value.value.try_into()?;
+                        Ok(ExternalMessage::MetadataRes(ShareMetadata {
+                            file_id: tmp.file_id,
+                            exp: tmp.exp,
+                            crt: tmp.crt,
+                            file_size: tmp.file_size,
+                            username: tmp.username,
+                            file_name: tmp.file_name,
+                        }))
                     }
                     fsp_comm::Type::Authreq => {
                         let tmp: AuthReq = value.value.try_into()?;
@@ -206,6 +241,23 @@ pub mod websocket_message {
     }
 }
 
+/// The Share type represents a file that has been shared by an agent
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct ShareMetadata {
+    /// Unique id for this file type
+    pub file_id: u32,
+    /// Time when this share will expire, in seconds past epoch
+    pub exp: u64,
+    /// Time when this share was created, in seconds past epoch
+    pub crt: u64,
+    /// File_size of the share in bytes
+    pub file_size: u64,
+    /// Username of the person who shared the fiel
+    pub username: String,
+    /// Name of hte file
+    pub file_name: String,
+}
+
 /// The Message type is a piece of data that can be sent between a peer and client
 /// it is designed to be send through a websocket connection, and is converted to
 /// protobuf3 to faciliate this sending.
@@ -218,9 +270,10 @@ pub enum Message {
     Error(Option<String>, EndOfConnection, ErrorKind),
     /// Request the peer to upload the provided `FileId` to the provided url
     UploadTo(FileId, String),
-    /// Reuqest the peer to upload the provided `FileId` metadata to the provided
-    /// url
-    Metadata(FileId, String),
+    /// Reuqest the peer to upload the provided `FileId` metadata
+    MetadataReq(FileId),
+    /// The metadata about a share sent from an agent
+    MetadataRes(ShareMetadata),
     /// Request this peer to authenticate itself using the `PublicId` provided.
     AuthReq(PublicId),
     /// Response from peer with the `PublicId` it is attempting to authenticate
