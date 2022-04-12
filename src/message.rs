@@ -164,10 +164,7 @@ pub mod websocket_message {
                     upload_url,
                 }
                 .into()),
-                ExternalMessage::MetadataReq(file_id) => Ok(MetadataReq {
-                    file_id,
-                }
-                .into()),
+                ExternalMessage::MetadataReq(file_id) => Ok(MetadataReq { file_id }.into()),
                 ExternalMessage::MetadataRes(metadata) => Ok(MetadataRes {
                     file_id: metadata.file_id,
                     exp: metadata.exp,
@@ -175,7 +172,8 @@ pub mod websocket_message {
                     file_size: metadata.file_size,
                     username: metadata.username,
                     file_name: metadata.file_name,
-                }.into()),
+                }
+                .into()),
                 ExternalMessage::AuthReq(public_id) => Ok(AuthReq {
                     public_id: public_id,
                 }
