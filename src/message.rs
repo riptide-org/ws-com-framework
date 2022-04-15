@@ -167,11 +167,9 @@ pub mod websocket_message {
                     upload_url,
                 }
                 .into()),
-                ExternalMessage::MetadataReq(file_id, upload_id) => Ok(MetadataReq {
-                    file_id,
-                    upload_id,
+                ExternalMessage::MetadataReq(file_id, upload_id) => {
+                    Ok(MetadataReq { file_id, upload_id }.into())
                 }
-                .into()),
                 ExternalMessage::MetadataRes(metadata, upload_id) => Ok(MetadataRes {
                     file_id: metadata.file_id,
                     exp: metadata.exp,
@@ -180,11 +178,9 @@ pub mod websocket_message {
                     username: metadata.username,
                     file_name: metadata.file_name,
                     upload_id,
-                }.into()),
-                ExternalMessage::AuthReq(public_id) => Ok(AuthReq {
-                    public_id,
                 }
                 .into()),
+                ExternalMessage::AuthReq(public_id) => Ok(AuthReq { public_id }.into()),
                 ExternalMessage::AuthRes(public_id, passcode) => Ok(Auth {
                     public_id,
                     passcode,
@@ -219,14 +215,17 @@ pub mod websocket_message {
                     }
                     fsp_comm::Type::MetadataRes => {
                         let tmp: MetadataRes = value.value.try_into()?;
-                        Ok(ExternalMessage::MetadataRes(ShareMetadata {
-                            file_id: tmp.file_id,
-                            exp: tmp.exp,
-                            crt: tmp.crt,
-                            file_size: tmp.file_size,
-                            username: tmp.username,
-                            file_name: tmp.file_name,
-                        }, tmp.upload_id))
+                        Ok(ExternalMessage::MetadataRes(
+                            ShareMetadata {
+                                file_id: tmp.file_id,
+                                exp: tmp.exp,
+                                crt: tmp.crt,
+                                file_size: tmp.file_size,
+                                username: tmp.username,
+                                file_name: tmp.file_name,
+                            },
+                            tmp.upload_id,
+                        ))
                     }
                     fsp_comm::Type::Authreq => {
                         let tmp: AuthReq = value.value.try_into()?;
