@@ -19,6 +19,9 @@ pub type PublicId = u64;
 /// 32 byte authentication key
 pub type Passcode = Vec<u8>;
 
+/// 8 bytes representing a public upload id on the server
+pub type UploadId = u64;
+
 /// A macro for converting a provided type into bytes for sending over a stream
 macro_rules! into_bytes {
     ($data:tt) => {{
@@ -160,27 +163,31 @@ pub mod websocket_message {
                 }
                 .into()),
                 ExternalMessage::UploadTo(file_id, upload_url) => Ok(UploadTo {
-                    file_id: file_id,
+                    file_id,
                     upload_url,
                 }
                 .into()),
-                ExternalMessage::MetadataReq(file_id) => Ok(MetadataReq { file_id }.into()),
-                ExternalMessage::MetadataRes(metadata) => Ok(MetadataRes {
+                ExternalMessage::MetadataReq(file_id, upload_id) => Ok(MetadataReq {
+                    file_id,
+                    upload_id,
+                }
+                .into()),
+                ExternalMessage::MetadataRes(metadata, upload_id) => Ok(MetadataRes {
                     file_id: metadata.file_id,
                     exp: metadata.exp,
                     crt: metadata.crt,
                     file_size: metadata.file_size,
                     username: metadata.username,
                     file_name: metadata.file_name,
-                }
-                .into()),
+                    upload_id,
+                }.into()),
                 ExternalMessage::AuthReq(public_id) => Ok(AuthReq {
-                    public_id: public_id,
+                    public_id,
                 }
                 .into()),
                 ExternalMessage::AuthRes(public_id, passcode) => Ok(Auth {
-                    public_id: public_id,
-                    passcode: passcode,
+                    public_id,
+                    passcode,
                 }
                 .into()),
                 ExternalMessage::Close => todo!(),
@@ -208,7 +215,7 @@ pub mod websocket_message {
                     }
                     fsp_comm::Type::MetadataReq => {
                         let tmp: MetadataReq = value.value.try_into()?;
-                        Ok(ExternalMessage::MetadataReq(tmp.file_id))
+                        Ok(ExternalMessage::MetadataReq(tmp.file_id, tmp.upload_id))
                     }
                     fsp_comm::Type::MetadataRes => {
                         let tmp: MetadataRes = value.value.try_into()?;
@@ -219,7 +226,7 @@ pub mod websocket_message {
                             file_size: tmp.file_size,
                             username: tmp.username,
                             file_name: tmp.file_name,
-                        }))
+                        }, tmp.upload_id))
                     }
                     fsp_comm::Type::Authreq => {
                         let tmp: AuthReq = value.value.try_into()?;
@@ -269,9 +276,9 @@ pub enum Message {
     /// Request the peer to upload the provided `FileId` to the provided url
     UploadTo(FileId, String),
     /// Reuqest the peer to upload the provided `FileId` metadata
-    MetadataReq(FileId),
+    MetadataReq(FileId, UploadId),
     /// The metadata about a share sent from an agent
-    MetadataRes(ShareMetadata),
+    MetadataRes(ShareMetadata, UploadId),
     /// Request this peer to authenticate itself using the `PublicId` provided.
     AuthReq(PublicId),
     /// Response from peer with the `PublicId` it is attempting to authenticate
@@ -297,7 +304,7 @@ impl Message {
     pub fn from_bytes(input: &[u8]) -> Result<Self, Error> {
         use websocket_message::FspComm;
         let tmp: FspComm = input.try_into()?;
-        Ok(tmp.try_into()?)
+        tmp.try_into()
     }
 }
 

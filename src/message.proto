@@ -15,6 +15,7 @@ message FspComm {
     */
     message MetadataReq {
         uint32 file_id = 1;
+        uint64 upload_id = 2;
     }
 
     /*
@@ -31,8 +32,10 @@ message FspComm {
         uint64 file_size = 4;
         // The name of the user sharing the file
         string username = 5;
-        // the name of the file being share
+        // The name of the file being share
         string file_name = 6;
+        // The upload id provided by the server
+        uint64 upload_id = 7;
     }
 
     /*
