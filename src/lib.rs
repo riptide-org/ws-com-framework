@@ -1,42 +1,21 @@
-//! This library is designed to simplify the communication between a server agent, and a
-//! central api server.
-//! # Feature Flags
-//! - `server`: Register what message types may be sent or recieved as a server.
-//! - `client`: Register what message types may be sent or received as a client.
+//! Ws-com-framework converts messages to and from binary for sending down web sockets.
 //!
-//! Note that these features are mutually exclusive, attempting to use both of them will cause a compile error.
+//! The `Message` type implements `TryFrom` and `TryInto` for `Vec<u8>`, and is designed to be
+//! matched againsts for processing/responding to requests.
 //!
-//! The main difference between them is what can be sent and recieved down each socket. This helps to create limitations around what
-//! each side of the connection must match against - all checked at compile time of course.
-//!
-//! # Examples
+//! # Example
 //! ```rust
-//! #[cfg(feature = "server")]
 //! async fn example() {
 //!     use ws_com_framework::message::Message;
-//!     use ws_com_framework::Sender;
-//!     use ws_com_framework::Receiver;
 //!
-//!     let (tx, rx) = tokio::sync::mpsc::unbounded_channel::<Message>();
-//!
-//!     //Create a new sender over the sending stream of the websocket.
-//!     let mut s = Sender::new(tx);
+//!     let (mut tx, mut rx) = tokio::sync::mpsc::unbounded_channel::<Vec<u8>>();
 //!
 //!     let message: Message = Message::AuthReq(56);
+//!     tx.send(message.try_into().unwrap()).unwrap();
 //!
-//!     //Same syntax, except message is now of our custom type, in this way we can limit what can be
-//!     //sent down the websockets - which should help to reduce errors.
-//!     s.send(message).await.unwrap();
-//!
-//!     //Close the websocket
-//!     s.close().await;
-//!
-//!     let mut r = Receiver::new(rx); //Create a new reciever, which wraps over the sink of the websocket.
-//!     while let Some(v) = r.next().await {
-//!         //Very similar syntax to current solution
-//!         //except that v is a custom type which we can then
-//!         //easily match over
-//!         assert_eq!(Message::AuthReq(56), v.unwrap());
+//!     while let Some(v) = rx.recv().await {
+//!         let recv_message = Message::try_from(v).unwrap();
+//!         assert_eq!(Message::AuthReq(56), recv_message);
 //!     }
 //! }
 //! ```
@@ -59,4 +38,4 @@ pub mod message;
 
 //Re-export relevant types
 pub use error::Error;
-pub use message::{FileId, Message, Passcode, PublicId};
+pub use message::{FileId, Message, Passcode, PublicId, ShareMetadata, UploadId};

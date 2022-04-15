@@ -2,6 +2,8 @@
 name = "ws-com-framework"
 version = "1.1.0"
 authors = ["Josiah Bull <josiah.bull7@gmail.com>"]
+license = "MIT"
+description = "Enforces consistent conversion of types to/from binary when communicating through websockets."
 edition = "2021"
 build = "build.rs"
 

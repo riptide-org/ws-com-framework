@@ -1,11 +1,9 @@
 <!-- TODO: Add badges here -->
 # Websocket Communication Framework for RipTide
 # Overview
-During the development of the RipTide filesharing application, it was quickly discovered that a reliable means of communication between the central api and the server agent was required. This is the niche that this crate fufills. It acts as a wrapper over a variety of rust websocket communication protocols from different crates, and allows standardised sending of messages between these different frameworks.
+During the development of the RipTide filesharing application, a reliable means of communication between the central api and the server agent was required. Ws-com-framework is a simplee framework for converting message to/from binary to be sent over websocket implementations.
 
-Messages are sent as binary, which helps to cutdown on the overhead of converting to a json (or other) standard first.The downside of this is that serde is required as a dependency. The crate is relatively simple, with a basic testing script provided.
-
-Unfortunately, the server and client crate features are not compatible, so testing this crate is difficult. More tests are required for this to be considered a well-tested crate.
+It relies on protobuf3 and the prost crate internally for these conversions.
 
 # Development
 
