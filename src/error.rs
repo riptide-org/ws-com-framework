@@ -1,33 +1,6 @@
 //! Error handling internally and externally for the ws-com-framework
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-/// Whether the connection should be closed after this error.
-pub enum EndOfConnection {
-    /// The connection will now close, please flush buffers
-    End,
-    /// The connection will continue, no need to disconnect
-    Continue,
-}
-
-impl From<bool> for EndOfConnection {
-    fn from(b: bool) -> Self {
-        match b {
-            true => Self::End,
-            false => Self::Continue,
-        }
-    }
-}
-
-impl From<EndOfConnection> for bool {
-    fn from(c: EndOfConnection) -> Self {
-        match c {
-            EndOfConnection::End => true,
-            EndOfConnection::Continue => false,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 /// Represents the kind of error recieved from a peer
 pub enum ErrorKind {
     /// The client has sent a unique error that does not

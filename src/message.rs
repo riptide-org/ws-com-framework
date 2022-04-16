@@ -2,7 +2,7 @@
 //!
 //! Internally it also provides conversions between the Message type to/from bytes.
 
-use crate::error::{EndOfConnection, Error, ErrorKind};
+use crate::error::{Error, ErrorKind};
 
 /*
 Note: These types could be stack allocated, but the recving buff heap allocates them
@@ -156,9 +156,8 @@ pub mod websocket_message {
                     r#type: 1,
                     value: Vec::with_capacity(0),
                 }),
-                ExternalMessage::Error(reason, connection_end, error_kind) => Ok(CommError {
+                ExternalMessage::Error(reason, error_kind) => Ok(CommError {
                     r#type: error_kind as i32,
-                    connection_end: connection_end.into(),
                     reason,
                 }
                 .into()),
@@ -201,7 +200,6 @@ pub mod websocket_message {
                         let tmp: CommError = value.value.try_into()?;
                         Ok(ExternalMessage::Error(
                             tmp.reason,
-                            tmp.connection_end.into(),
                             tmp.r#type.into(),
                         ))
                     }
@@ -271,7 +269,7 @@ pub enum Message {
     /// Acknowledgement of a previous response
     Ok,
     /// An error has occured, expect this in response to sending a bad request
-    Error(Option<String>, EndOfConnection, ErrorKind),
+    Error(Option<String>, ErrorKind),
     /// Request the peer to upload the provided `FileId` to the provided url
     UploadTo(FileId, String),
     /// Reuqest the peer to upload the provided `FileId` metadata

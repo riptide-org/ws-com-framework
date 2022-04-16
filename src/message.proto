@@ -71,11 +71,6 @@ message FspComm {
         /// The type of error being sent
         Type type = 1;
 
-        /// Whether the peer should expect to be disconnected after recieving this error
-        /// true = connection closed
-        /// false = connection remains
-        bool connection_end = 2;
-
         /// An optional reason for the error.
         optional string reason = 3;
     }
