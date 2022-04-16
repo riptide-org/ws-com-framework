@@ -198,10 +198,7 @@ pub mod websocket_message {
                     fsp_comm::Type::Ok => Ok(ExternalMessage::Ok),
                     fsp_comm::Type::Error => {
                         let tmp: CommError = value.value.try_into()?;
-                        Ok(ExternalMessage::Error(
-                            tmp.reason,
-                            tmp.r#type.into(),
-                        ))
+                        Ok(ExternalMessage::Error(tmp.reason, tmp.r#type.into()))
                     }
                     fsp_comm::Type::UploadTo => {
                         let tmp: UploadTo = value.value.try_into()?;
