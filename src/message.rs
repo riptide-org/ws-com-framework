@@ -185,7 +185,9 @@ pub mod websocket_message {
                     passcode,
                 }
                 .into()),
-                ExternalMessage::Close => todo!(),
+                ExternalMessage::Close => Err(super::Error::ByteEncodeError(String::from(
+                    "don't attempt to convert close type to bytes - this could panic in future",
+                ))),
             }
         }
     }
