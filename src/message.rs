@@ -153,7 +153,7 @@ pub mod websocket_message {
         fn try_from(msg: ExternalMessage) -> Result<Self, super::Error> {
             match msg {
                 ExternalMessage::Ok => Ok(Self {
-                    r#type: 1,
+                    r#type: 0,
                     value: Vec::with_capacity(0),
                 }),
                 ExternalMessage::Error(reason, error_kind) => Ok(CommError {
@@ -184,10 +184,7 @@ pub mod websocket_message {
                     public_id,
                     passcode,
                 }
-                .into()),
-                ExternalMessage::Close => Err(super::Error::ByteEncodeError(String::from(
-                    "don't attempt to convert close type to bytes - this could panic in future",
-                ))),
+                .into())
             }
         }
     }
@@ -280,8 +277,6 @@ pub enum Message {
     /// Response from peer with the `PublicId` it is attempting to authenticate
     /// and the associated `Passcode` for that `PublidId`.
     AuthRes(PublicId, Passcode),
-    /// The peer has indicated that the connection will close
-    Close,
 }
 
 impl Message {
