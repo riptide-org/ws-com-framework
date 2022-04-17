@@ -184,7 +184,7 @@ pub mod websocket_message {
                     public_id,
                     passcode,
                 }
-                .into())
+                .into()),
             }
         }
     }
