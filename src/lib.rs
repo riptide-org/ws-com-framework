@@ -1,7 +1,7 @@
 //! Ws-com-framework converts messages to and from binary for sending down web sockets.
 //!
 //! The `Message` type implements `TryFrom` and `TryInto` for `Vec<u8>`, and is designed to be
-//! matched againsts for processing/responding to requests.
+//! matched against for processing/responding to requests.
 //!
 //! # Example
 //! ```rust

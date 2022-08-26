@@ -1,7 +1,7 @@
 //! Error handling internally and externally for the ws-com-framework
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-/// Represents the kind of error recieved from a peer
+/// Represents the kind of error received from a peer
 pub enum ErrorKind {
     /// The client has sent a unique error that does not
     /// have a predetermined type. They should have set the Option<String> value.
@@ -26,10 +26,10 @@ impl From<i32> for ErrorKind {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-/// Error types, represents both errors recieved from a peer, and internal conversion errors
+/// Error types, represents both errors received from a peer, and internal conversion errors
 /// inside of the framework.
 pub enum Error {
-    /// Unable to decode recieved message
+    /// Unable to decode received message
     ByteDecodeError(String),
 
     /// Unable to encode provided message to send

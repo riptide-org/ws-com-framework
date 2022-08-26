@@ -5,7 +5,7 @@
 use crate::error::{Error, ErrorKind};
 
 /*
-Note: These types could be stack allocated, but the recving buff heap allocates them
+Note: These types could be stack allocated, but the receiving buff heap allocates them
 anyways, so I'd rather just have a single heap allocation than migrating them to the
 stack afterwards. If there is a better way to do this I'm all ears.
 */
@@ -38,12 +38,19 @@ macro_rules! into_bytes {
 /// `websocket_message` segregates the internal message type used by protobuf3
 #[allow(missing_docs, missing_copy_implementations)]
 pub mod websocket_message {
-    use self::fsp_comm::{Auth, AuthReq, Error as CommError, MetadataReq, MetadataRes, UploadTo};
-    use super::Message as ExternalMessage;
+    use self::protobuf_types::fsp_comm::{
+        Auth, AuthReq, Error as CommError, MetadataReq, MetadataRes, UploadTo,
+    };
+    use self::protobuf_types::fsp_comm::{StatusReq, StatusRes};
+    use self::protobuf_types::FspComm;
     use super::ShareMetadata;
+    use super::{Message as ExternalMessage, StatusData};
     use prost::Message;
 
-    include!(concat!(env!("OUT_DIR"), "/events.rs"));
+    #[allow(clippy::all)]
+    pub mod protobuf_types {
+        include!(concat!(env!("OUT_DIR"), "/events.rs"));
+    }
 
     impl TryFrom<Vec<u8>> for UploadTo {
         type Error = super::Error;
@@ -82,6 +89,22 @@ pub mod websocket_message {
 
     impl TryFrom<Vec<u8>> for CommError {
         type Error = super::Error;
+        fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
+            Ok(Self::decode(&value[..])?)
+        }
+    }
+
+    impl TryFrom<Vec<u8>> for StatusRes {
+        type Error = super::Error;
+
+        fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
+            Ok(Self::decode(&value[..])?)
+        }
+    }
+
+    impl TryFrom<Vec<u8>> for StatusReq {
+        type Error = super::Error;
+
         fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
             Ok(Self::decode(&value[..])?)
         }
@@ -141,6 +164,24 @@ pub mod websocket_message {
         }
     }
 
+    impl From<StatusReq> for FspComm {
+        fn from(value: StatusReq) -> Self {
+            Self {
+                r#type: 7,
+                value: into_bytes!(value),
+            }
+        }
+    }
+
+    impl From<StatusRes> for FspComm {
+        fn from(value: StatusRes) -> Self {
+            Self {
+                r#type: 8,
+                value: into_bytes!(value),
+            }
+        }
+    }
+
     impl TryFrom<&[u8]> for FspComm {
         type Error = super::Error;
         fn try_from(msg: &[u8]) -> Result<Self, super::Error> {
@@ -185,6 +226,14 @@ pub mod websocket_message {
                     passcode,
                 }
                 .into()),
+                ExternalMessage::StatusReq(public_id) => Ok(StatusReq { public_id }.into()),
+                ExternalMessage::StatusRes(status) => Ok(StatusRes {
+                    public_id: status.public_id,
+                    ready: status.ready,
+                    uptime: status.uptime,
+                    message: status.message,
+                }
+                .into()),
             }
         }
     }
@@ -192,22 +241,22 @@ pub mod websocket_message {
     impl TryFrom<FspComm> for ExternalMessage {
         type Error = super::Error;
         fn try_from(value: FspComm) -> Result<Self, super::Error> {
-            if let Some(ty) = fsp_comm::Type::from_i32(value.r#type) {
+            if let Some(ty) = protobuf_types::fsp_comm::Type::from_i32(value.r#type) {
                 match ty {
-                    fsp_comm::Type::Ok => Ok(ExternalMessage::Ok),
-                    fsp_comm::Type::Error => {
+                    protobuf_types::fsp_comm::Type::Ok => Ok(ExternalMessage::Ok),
+                    protobuf_types::fsp_comm::Type::Error => {
                         let tmp: CommError = value.value.try_into()?;
                         Ok(ExternalMessage::Error(tmp.reason, tmp.r#type.into()))
                     }
-                    fsp_comm::Type::UploadTo => {
+                    protobuf_types::fsp_comm::Type::UploadTo => {
                         let tmp: UploadTo = value.value.try_into()?;
                         Ok(ExternalMessage::UploadTo(tmp.file_id, tmp.upload_url))
                     }
-                    fsp_comm::Type::MetadataReq => {
+                    protobuf_types::fsp_comm::Type::MetadataReq => {
                         let tmp: MetadataReq = value.value.try_into()?;
                         Ok(ExternalMessage::MetadataReq(tmp.file_id, tmp.upload_id))
                     }
-                    fsp_comm::Type::MetadataRes => {
+                    protobuf_types::fsp_comm::Type::MetadataRes => {
                         let tmp: MetadataRes = value.value.try_into()?;
                         Ok(ExternalMessage::MetadataRes(
                             ShareMetadata {
@@ -221,13 +270,26 @@ pub mod websocket_message {
                             tmp.upload_id,
                         ))
                     }
-                    fsp_comm::Type::Authreq => {
+                    protobuf_types::fsp_comm::Type::Authreq => {
                         let tmp: AuthReq = value.value.try_into()?;
                         Ok(ExternalMessage::AuthReq(tmp.public_id))
                     }
-                    fsp_comm::Type::Auth => {
+                    protobuf_types::fsp_comm::Type::Auth => {
                         let tmp: Auth = value.value.try_into()?;
                         Ok(ExternalMessage::AuthRes(tmp.public_id, tmp.passcode))
+                    }
+                    protobuf_types::fsp_comm::Type::StatusReq => {
+                        let tmp: StatusReq = value.value.try_into()?;
+                        Ok(ExternalMessage::StatusReq(tmp.public_id))
+                    }
+                    protobuf_types::fsp_comm::Type::StatusRes => {
+                        let tmp: StatusRes = value.value.try_into()?;
+                        Ok(ExternalMessage::StatusRes(StatusData {
+                            public_id: tmp.public_id,
+                            ready: tmp.ready,
+                            uptime: tmp.uptime,
+                            message: tmp.message,
+                        }))
                     }
                 }
             } else {
@@ -250,10 +312,23 @@ pub struct ShareMetadata {
     pub crt: u64,
     /// File_size of the share in bytes
     pub file_size: u64,
-    /// Username of the person who shared the fiel
+    /// Username of the person who shared the field
     pub username: String,
     /// Name of hte file
     pub file_name: String,
+}
+
+/// The status of a peer/agent
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct StatusData {
+    /// Unique id for this peer
+    pub public_id: u64,
+    /// Whether the peer is ready to accept connections
+    pub ready: bool,
+    /// Uptime of the peer in seconds
+    pub uptime: u64,
+    /// Optional uptime message from the peer
+    pub message: Option<String>,
 }
 
 /// The Message type is a piece of data that can be sent between a peer and client
@@ -275,8 +350,13 @@ pub enum Message {
     /// Request this peer to authenticate itself using the `PublicId` provided.
     AuthReq(PublicId),
     /// Response from peer with the `PublicId` it is attempting to authenticate
-    /// and the associated `Passcode` for that `PublidId`.
+    /// and the associated `Passcode` for that `PublicId`.
     AuthRes(PublicId, Passcode),
+    /// Request the status of the peer, which should be returned in the form of `Message::StatusReq`
+    /// containing a StatusData struct
+    StatusReq(PublicId),
+    /// Response to a `Message::StatusReq` containing the status of the peer
+    StatusRes(StatusData),
 }
 
 impl Message {
@@ -284,7 +364,7 @@ impl Message {
     /// Validates that types are of the correct length before conversion.
     #[deprecated(since = "1.0.0", note = "please use `TryFrom` instead")]
     pub fn into_bytes(self) -> Result<Vec<u8>, Error> {
-        use websocket_message::FspComm;
+        use websocket_message::protobuf_types::FspComm;
         let tmp: FspComm = self.try_into()?;
         Ok(into_bytes!(tmp))
     }
@@ -293,7 +373,7 @@ impl Message {
     /// stream must be encoded using the correct protobuf3 protocols.
     #[deprecated(since = "1.0.0", note = "please use `TryFrom` instead")]
     pub fn from_bytes(input: &[u8]) -> Result<Self, Error> {
-        use websocket_message::FspComm;
+        use websocket_message::protobuf_types::FspComm;
         let tmp: FspComm = input.try_into()?;
         tmp.try_into()
     }

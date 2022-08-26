@@ -55,6 +55,23 @@ message FspComm {
     }
 
     /*
+    * A request for the status of this agent
+    */
+    message StatusReq {
+        uint64 public_id = 1;
+    }
+
+    /*
+    * A response containing information about the status of this agent
+    */
+    message StatusRes {
+        uint64 public_id = 1;
+        bool ready = 2;
+        uint64 uptime = 4;
+        optional string message = 3;
+    }
+
+    /*
     * An error has occured
     */
     message Error {
@@ -83,6 +100,8 @@ message FspComm {
         METADATA_RES = 4;
         AUTHREQ = 5;
         AUTH = 6;
+        STATUS_REQ = 7;
+        STATUS_RES = 8;
     }
 
     Type type = 1;
