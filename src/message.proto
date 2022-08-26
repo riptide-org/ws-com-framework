@@ -58,17 +58,26 @@ message FspComm {
     * A request for the status of this agent
     */
     message StatusReq {
+        // The public_id of the node requesting the status
         uint64 public_id = 1;
+        // The upload id provided by the server
+        uint64 upload_id = 2;
     }
 
     /*
     * A response containing information about the status of this agent
     */
     message StatusRes {
+        // The unique public_id of this peer
         uint64 public_id = 1;
+        // Whether the server is currently active
         bool ready = 2;
-        uint64 uptime = 4;
-        optional string message = 3;
+        // How long the agent has been running (seconds)
+        uint64 uptime = 3;
+        // The upload id provided by the server
+        uint64 upload_id = 4;
+        // A human readable status message
+        optional string message = 5;
     }
 
     /*

@@ -239,17 +239,26 @@ pub mod websocket_message {
                     passcode,
                 }
                 .into()),
-                ExternalMessage::StatusReq { public_id } => Ok(StatusReq { public_id }.into()),
+                ExternalMessage::StatusReq {
+                    public_id,
+                    upload_id,
+                } => Ok(StatusReq {
+                    public_id,
+                    upload_id,
+                }
+                .into()),
                 ExternalMessage::StatusRes {
                     public_id,
                     ready,
                     uptime,
                     message,
+                    upload_id,
                 } => Ok(StatusRes {
                     public_id,
                     ready,
                     uptime,
                     message,
+                    upload_id,
                 }
                 .into()),
             }
@@ -312,6 +321,7 @@ pub mod websocket_message {
                         let tmp: StatusReq = value.value.try_into()?;
                         Ok(ExternalMessage::StatusReq {
                             public_id: tmp.public_id,
+                            upload_id: tmp.upload_id,
                         })
                     }
                     protobuf_types::fsp_comm::Type::StatusRes => {
@@ -321,6 +331,7 @@ pub mod websocket_message {
                             ready: tmp.ready,
                             uptime: tmp.uptime,
                             message: tmp.message,
+                            upload_id: tmp.upload_id,
                         })
                     }
                 }
@@ -397,6 +408,8 @@ pub enum Message {
     StatusReq {
         /// The `PublicId` of the peer to request status from
         public_id: PublicId,
+        /// The `UploadId` of the request this is associated with
+        upload_id: UploadId,
     },
     /// Response to a `Message::StatusReq` containing the status of the peer
     StatusRes {
@@ -406,6 +419,8 @@ pub enum Message {
         ready: bool,
         /// Uptime of the peer in seconds
         uptime: u64,
+        /// The `UploadId` of the request this is associated with
+        upload_id: UploadId,
         /// Optional uptime message from the peer
         message: Option<String>,
     },

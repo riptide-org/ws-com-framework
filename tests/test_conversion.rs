@@ -110,6 +110,7 @@ fn test_converting_auth_res() {
 fn test_converting_status_req() {
     let msg = Message::StatusReq {
         public_id: 12308749783359,
+        upload_id: 2103408934,
     };
     let bytes: Vec<u8> = msg.clone().try_into().unwrap();
     let msg2: Message = Message::try_from(bytes).unwrap();
@@ -123,6 +124,7 @@ fn test_converting_status_res() {
         ready: true,
         uptime: 123,
         message: Some(String::from("ooga buuga my booga")),
+        upload_id: 2103408934,
     };
     let bytes: Vec<u8> = msg.clone().try_into().unwrap();
     let msg2: Message = Message::try_from(bytes).unwrap();
