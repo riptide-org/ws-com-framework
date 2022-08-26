@@ -10,12 +10,14 @@
 //!
 //!     let (mut tx, mut rx) = tokio::sync::mpsc::unbounded_channel::<Vec<u8>>();
 //!
-//!     let message: Message = Message::AuthReq(56);
+//!     let message: Message = Message::AuthReq {
+//!         public_id: 43
+//!     };
 //!     tx.send(message.try_into().unwrap()).unwrap();
 //!
 //!     while let Some(v) = rx.recv().await {
 //!         let recv_message = Message::try_from(v).unwrap();
-//!         assert_eq!(Message::AuthReq(56), recv_message);
+//!         assert_eq!(Message::AuthReq{public_id: 43}, recv_message);
 //!     }
 //! }
 //! ```
@@ -38,4 +40,4 @@ pub mod message;
 
 //Re-export relevant types
 pub use error::Error;
-pub use message::{FileId, Message, Passcode, PublicId, ShareMetadata, UploadId};
+pub use message::{FileId, Message, Passcode, PublicId, UploadId};

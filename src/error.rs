@@ -26,8 +26,7 @@ impl From<i32> for ErrorKind {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-/// Error types, represents both errors received from a peer, and internal conversion errors
-/// inside of the framework.
+/// Error types, represents both errors received from a peer, and internal conversion errors inside of the framework.
 pub enum Error {
     /// Unable to decode received message
     ByteDecodeError(String),
@@ -51,8 +50,23 @@ impl std::fmt::Display for Error {
     }
 }
 
-impl std::error::Error for Error {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        None
+impl std::error::Error for Error {}
+
+#[cfg(not(tarpaulin_include))]
+#[cfg(test)]
+mod test_err {
+    #[test]
+    fn test_printing_errors() {
+        let err = super::Error::ByteDecodeError(String::from("test"));
+        assert_eq!(
+            format!("{}", err),
+            "failed to decode bytes as valid message test"
+        );
+
+        let err = super::Error::ByteEncodeError(String::from("test"));
+        assert_eq!(
+            format!("{}", err),
+            "failed to encode bytes as valid message test"
+        );
     }
 }

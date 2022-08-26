@@ -36,18 +36,19 @@ macro_rules! into_bytes {
 }
 
 /// `websocket_message` segregates the internal message type used by protobuf3
-#[allow(missing_docs, missing_copy_implementations)]
 pub mod websocket_message {
+    use crate::error::ErrorKind;
+
     use self::protobuf_types::fsp_comm::{
         Auth, AuthReq, Error as CommError, MetadataReq, MetadataRes, UploadTo,
     };
     use self::protobuf_types::fsp_comm::{StatusReq, StatusRes};
     use self::protobuf_types::FspComm;
-    use super::ShareMetadata;
-    use super::{Message as ExternalMessage, StatusData};
+    use super::Message as ExternalMessage;
     use prost::Message;
 
-    #[allow(clippy::all)]
+    #[allow(clippy::all, missing_docs, missing_copy_implementations)]
+    #[cfg(not(tarpaulin_include))]
     pub mod protobuf_types {
         include!(concat!(env!("OUT_DIR"), "/events.rs"));
     }
@@ -96,7 +97,6 @@ pub mod websocket_message {
 
     impl TryFrom<Vec<u8>> for StatusRes {
         type Error = super::Error;
-
         fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
             Ok(Self::decode(&value[..])?)
         }
@@ -104,7 +104,6 @@ pub mod websocket_message {
 
     impl TryFrom<Vec<u8>> for StatusReq {
         type Error = super::Error;
-
         fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
             Ok(Self::decode(&value[..])?)
         }
@@ -197,41 +196,60 @@ pub mod websocket_message {
                     r#type: 0,
                     value: Vec::with_capacity(0),
                 }),
-                ExternalMessage::Error(reason, error_kind) => Ok(CommError {
-                    r#type: error_kind as i32,
+                ExternalMessage::Error { kind, reason } => Ok(CommError {
+                    r#type: kind as i32,
                     reason,
                 }
                 .into()),
-                ExternalMessage::UploadTo(file_id, upload_url) => Ok(UploadTo {
+                ExternalMessage::UploadTo {
+                    file_id,
+                    upload_url,
+                } => Ok(UploadTo {
                     file_id,
                     upload_url,
                 }
                 .into()),
-                ExternalMessage::MetadataReq(file_id, upload_id) => {
+                ExternalMessage::MetadataReq { file_id, upload_id } => {
                     Ok(MetadataReq { file_id, upload_id }.into())
                 }
-                ExternalMessage::MetadataRes(metadata, upload_id) => Ok(MetadataRes {
-                    file_id: metadata.file_id,
-                    exp: metadata.exp,
-                    crt: metadata.crt,
-                    file_size: metadata.file_size,
-                    username: metadata.username,
-                    file_name: metadata.file_name,
+                ExternalMessage::MetadataRes {
+                    file_id,
+                    exp,
+                    crt,
+                    file_size,
+                    username,
+                    file_name,
+                    upload_id,
+                } => Ok(MetadataRes {
+                    file_id,
+                    exp,
+                    crt,
+                    file_size,
+                    username,
+                    file_name,
                     upload_id,
                 }
                 .into()),
-                ExternalMessage::AuthReq(public_id) => Ok(AuthReq { public_id }.into()),
-                ExternalMessage::AuthRes(public_id, passcode) => Ok(Auth {
+                ExternalMessage::AuthReq { public_id } => Ok(AuthReq { public_id }.into()),
+                ExternalMessage::AuthRes {
+                    public_id,
+                    passcode,
+                } => Ok(Auth {
                     public_id,
                     passcode,
                 }
                 .into()),
-                ExternalMessage::StatusReq(public_id) => Ok(StatusReq { public_id }.into()),
-                ExternalMessage::StatusRes(status) => Ok(StatusRes {
-                    public_id: status.public_id,
-                    ready: status.ready,
-                    uptime: status.uptime,
-                    message: status.message,
+                ExternalMessage::StatusReq { public_id } => Ok(StatusReq { public_id }.into()),
+                ExternalMessage::StatusRes {
+                    public_id,
+                    ready,
+                    uptime,
+                    message,
+                } => Ok(StatusRes {
+                    public_id,
+                    ready,
+                    uptime,
+                    message,
                 }
                 .into()),
             }
@@ -246,50 +264,64 @@ pub mod websocket_message {
                     protobuf_types::fsp_comm::Type::Ok => Ok(ExternalMessage::Ok),
                     protobuf_types::fsp_comm::Type::Error => {
                         let tmp: CommError = value.value.try_into()?;
-                        Ok(ExternalMessage::Error(tmp.reason, tmp.r#type.into()))
+                        Ok(ExternalMessage::Error {
+                            kind: ErrorKind::from(tmp.r#type),
+                            reason: tmp.reason,
+                        })
                     }
                     protobuf_types::fsp_comm::Type::UploadTo => {
                         let tmp: UploadTo = value.value.try_into()?;
-                        Ok(ExternalMessage::UploadTo(tmp.file_id, tmp.upload_url))
+                        Ok(ExternalMessage::UploadTo {
+                            file_id: tmp.file_id,
+                            upload_url: tmp.upload_url,
+                        })
                     }
                     protobuf_types::fsp_comm::Type::MetadataReq => {
                         let tmp: MetadataReq = value.value.try_into()?;
-                        Ok(ExternalMessage::MetadataReq(tmp.file_id, tmp.upload_id))
+                        Ok(ExternalMessage::MetadataReq {
+                            file_id: tmp.file_id,
+                            upload_id: tmp.upload_id,
+                        })
                     }
                     protobuf_types::fsp_comm::Type::MetadataRes => {
                         let tmp: MetadataRes = value.value.try_into()?;
-                        Ok(ExternalMessage::MetadataRes(
-                            ShareMetadata {
-                                file_id: tmp.file_id,
-                                exp: tmp.exp,
-                                crt: tmp.crt,
-                                file_size: tmp.file_size,
-                                username: tmp.username,
-                                file_name: tmp.file_name,
-                            },
-                            tmp.upload_id,
-                        ))
+                        Ok(ExternalMessage::MetadataRes {
+                            file_id: tmp.file_id,
+                            exp: tmp.exp,
+                            crt: tmp.crt,
+                            file_size: tmp.file_size,
+                            username: tmp.username,
+                            file_name: tmp.file_name,
+                            upload_id: tmp.upload_id,
+                        })
                     }
                     protobuf_types::fsp_comm::Type::Authreq => {
                         let tmp: AuthReq = value.value.try_into()?;
-                        Ok(ExternalMessage::AuthReq(tmp.public_id))
+                        Ok(ExternalMessage::AuthReq {
+                            public_id: tmp.public_id,
+                        })
                     }
                     protobuf_types::fsp_comm::Type::Auth => {
                         let tmp: Auth = value.value.try_into()?;
-                        Ok(ExternalMessage::AuthRes(tmp.public_id, tmp.passcode))
+                        Ok(ExternalMessage::AuthRes {
+                            public_id: tmp.public_id,
+                            passcode: tmp.passcode,
+                        })
                     }
                     protobuf_types::fsp_comm::Type::StatusReq => {
                         let tmp: StatusReq = value.value.try_into()?;
-                        Ok(ExternalMessage::StatusReq(tmp.public_id))
+                        Ok(ExternalMessage::StatusReq {
+                            public_id: tmp.public_id,
+                        })
                     }
                     protobuf_types::fsp_comm::Type::StatusRes => {
                         let tmp: StatusRes = value.value.try_into()?;
-                        Ok(ExternalMessage::StatusRes(StatusData {
+                        Ok(ExternalMessage::StatusRes {
                             public_id: tmp.public_id,
                             ready: tmp.ready,
                             uptime: tmp.uptime,
                             message: tmp.message,
-                        }))
+                        })
                     }
                 }
             } else {
@@ -301,62 +333,82 @@ pub mod websocket_message {
     }
 }
 
-/// The Share type represents a file that has been shared by an agent
-#[derive(Debug, Clone, Eq, PartialEq)]
-pub struct ShareMetadata {
-    /// Unique id for this file type
-    pub file_id: u32,
-    /// Time when this share will expire, in seconds past epoch
-    pub exp: u64,
-    /// Time when this share was created, in seconds past epoch
-    pub crt: u64,
-    /// File_size of the share in bytes
-    pub file_size: u64,
-    /// Username of the person who shared the field
-    pub username: String,
-    /// Name of hte file
-    pub file_name: String,
-}
-
-/// The status of a peer/agent
-#[derive(Debug, Clone, Eq, PartialEq)]
-pub struct StatusData {
-    /// Unique id for this peer
-    pub public_id: u64,
-    /// Whether the peer is ready to accept connections
-    pub ready: bool,
-    /// Uptime of the peer in seconds
-    pub uptime: u64,
-    /// Optional uptime message from the peer
-    pub message: Option<String>,
-}
-
 /// The Message type is a piece of data that can be sent between a peer and client
 /// it is designed to be send through a websocket connection, and is converted to
-/// protobuf3 to faciliate this sending.
+/// protobuf3 to facilitate this sending.
 /// Recieved messages are converted from binary.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Message {
     /// Acknowledgement of a previous response
     Ok,
-    /// An error has occured, expect this in response to sending a bad request
-    Error(Option<String>, ErrorKind),
+    /// An error has occurred, expect this in response to sending a bad request
+    Error {
+        /// The kind of error that has occurred
+        kind: ErrorKind,
+        /// A human readable reason for the error, optionally included
+        reason: Option<String>,
+    },
     /// Request the peer to upload the provided `FileId` to the provided url
-    UploadTo(FileId, String),
+    UploadTo {
+        /// The `FileId` of the file to upload
+        file_id: FileId,
+        /// The url that the file should be POSTed to in a streaming fashion
+        upload_url: String,
+    },
     /// Reuqest the peer to upload the provided `FileId` metadata
-    MetadataReq(FileId, UploadId),
+    MetadataReq {
+        /// The `FileId` of the file to upload metadata from
+        file_id: FileId,
+        /// The upload_id to attach when returning with MetadataRes
+        upload_id: UploadId,
+    },
     /// The metadata about a share sent from an agent
-    MetadataRes(ShareMetadata, UploadId),
+    MetadataRes {
+        /// Unique id for this file type
+        file_id: u32,
+        /// Time when this share will expire, in seconds past epoch
+        exp: u64,
+        /// Time when this share was created, in seconds past epoch
+        crt: u64,
+        /// File_size of the share in bytes
+        file_size: u64,
+        /// Username of the person who shared the field
+        username: String,
+        /// Name of hte file
+        file_name: String,
+        /// The id of this file upload
+        upload_id: UploadId,
+    },
     /// Request this peer to authenticate itself using the `PublicId` provided.
-    AuthReq(PublicId),
+    AuthReq {
+        /// The `PublicId` of the peer to authenticate
+        public_id: PublicId,
+    },
     /// Response from peer with the `PublicId` it is attempting to authenticate
     /// and the associated `Passcode` for that `PublicId`.
-    AuthRes(PublicId, Passcode),
+    AuthRes {
+        /// The `PublicId` of the peer being authenticated
+        public_id: PublicId,
+        /// The `Passcode` for the `PublicId` being authenticated
+        passcode: Passcode,
+    },
     /// Request the status of the peer, which should be returned in the form of `Message::StatusReq`
     /// containing a StatusData struct
-    StatusReq(PublicId),
+    StatusReq {
+        /// The `PublicId` of the peer to request status from
+        public_id: PublicId,
+    },
     /// Response to a `Message::StatusReq` containing the status of the peer
-    StatusRes(StatusData),
+    StatusRes {
+        /// Unique id for this peer
+        public_id: u64,
+        /// Whether the peer is ready to accept connections
+        ready: bool,
+        /// Uptime of the peer in seconds
+        uptime: u64,
+        /// Optional uptime message from the peer
+        message: Option<String>,
+    },
 }
 
 impl Message {
