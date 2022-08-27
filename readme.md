@@ -1,6 +1,6 @@
 # Websocket Communication Framework for RipTide
 
-![Test](https://github.com/riptide-org/ws-com-framework/actions/workflows/test.yml/badge.svg)
+![Test](https://github.com/riptide-org/ws-com-framework/actions/workflows/precommit.yml/badge.svg)
 [![codecov](https://codecov.io/gh/riptide-org/ws-com-framework/branch/main/graph/badge.svg?token=ALQI2M77DH)](https://codecov.io/gh/riptide-org/ws-com-framework)
 
 ## Overview
